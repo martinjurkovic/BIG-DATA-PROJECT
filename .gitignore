@@ -3,6 +3,7 @@ data/CSV/*
 !data/CSV/nyt.sh
 data/parquet/*
 data/HDF5/*
+data/duckdb/*
 
 
 # Byte-compiled / optimized / DLL files
