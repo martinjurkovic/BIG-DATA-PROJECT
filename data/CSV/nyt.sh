@@ -1,5 +1,16 @@
 #!/bin/bash
-curl https://data.cityofnewyork.us/api/views/pvqr-7yc4/rows.csv -o 2024_april.csv
+scp hpc-login.arnes.si:/d/hpc/projects/FRI/bigdata/data/NYTickets/2024_april.csv .
+# scp hpc-login.arnes.si:/d/hpc/projects/FRI/bigdata/data/NYTickets/2023.csv .
+# scp hpc-login.arnes.si:/d/hpc/projects/FRI/bigdata/data/NYTickets/2022.csv .
+# scp hpc-login.arnes.si:/d/hpc/projects/FRI/bigdata/data/NYTickets/2021.csv .
+# scp hpc-login.arnes.si:/d/hpc/projects/FRI/bigdata/data/NYTickets/2020.csv .
+# scp hpc-login.arnes.si:/d/hpc/projects/FRI/bigdata/data/NYTickets/2019.csv .
+# scp hpc-login.arnes.si:/d/hpc/projects/FRI/bigdata/data/NYTickets/2018.csv .
+# scp hpc-login.arnes.si:/d/hpc/projects/FRI/bigdata/data/NYTickets/2017.csv .
+# scp hpc-login.arnes.si:/d/hpc/projects/FRI/bigdata/data/NYTickets/2016.csv .
+# scp hpc-login.arnes.si:/d/hpc/projects/FRI/bigdata/data/NYTickets/2015.csv .
+# scp hpc-login.arnes.si:/d/hpc/projects/FRI/bigdata/data/NYTickets/2014.csv .
+# curl https://data.cityofnewyork.us/api/views/pvqr-7yc4/rows.csv -o 2024_april.csv
 #curl https://data.cityofnewyork.us/api/views/869v-vr48/rows.csv -o 2023.csv
 #curl https://data.cityofnewyork.us/api/views/7mxj-7a6y/rows.csv -o 2022.csv
 #curl https://data.cityofnewyork.us/api/views/pvqr-7yc4/rows.csv -o 2022.csv
