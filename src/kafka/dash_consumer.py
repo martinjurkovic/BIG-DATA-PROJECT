@@ -25,10 +25,35 @@ batch_size = 1000
 data_window = deque(maxlen=batch_size)
 stats_df = pd.DataFrame(columns=['YearMonth', 'Violation County', 'mean', 'std', 'median', 'max', 'min'])
 
+borough_map = {
+    "BX": "BX",
+    "BRONX": "BX",
+    "BK": "BK",
+    "BROOKLYN": "BK",
+    "K": "BK",
+    "KINGS": "BK",
+    "MN": "MN",
+    "MANHATTAN": "MN",
+    "Q": "QS",
+    "QS": "QS",
+    "QN": "QS",
+    "QNS": "QS",
+    "QUEENS": "QS",
+    "SI": "SI",
+    "ST": "SI",
+    "STATEN ISLAND": "SI",
+    "NY": "TOTAL",
+    "": "TOTAL",
+    "R": "TOTAL",
+}
+
 def process_batch():
     global stats_df
     # Create a DataFrame from the collected batch
     df = pd.DataFrame(data_window)
+
+    # Remap boroughs
+    df['Violation County'] = df['Violation County'].apply(lambda x: borough_map.get(x, x))
     
     # Convert 'Issue Date' to datetime and extract year and month
     df['Issue Date'] = pd.to_datetime(df['Issue Date'], errors='coerce')
