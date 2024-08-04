@@ -55,6 +55,25 @@ borough_map = {
 true_labels = []
 predicted_labels = []
 
+# Custom LabelEncoder to handle unseen labels
+class CustomLabelEncoder:
+    def __init__(self):
+        self.label_encoder = LabelEncoder()
+        self.classes_ = set()
+        self.default_label = -1
+
+    def fit(self, data):
+        self.label_encoder.fit(data)
+        self.classes_ = set(self.label_encoder.classes_)
+        return self
+
+    def transform(self, data):
+        return [self.label_encoder.transform([x])[0] if x in self.classes_ else self.default_label for x in data]
+
+    def fit_transform(self, data):
+        self.fit(data)
+        return self.transform(data)
+
 def process_batch():
     global clusterer, scaler, label_encoders, true_labels, predicted_labels, fitted
     # Create a DataFrame from the collected batch
@@ -77,26 +96,13 @@ def process_batch():
     df = df[df['Issue Date'].dt.year > 2012]
 
     # Select relevant features for clustering
-    # features = df[['Vehicle Year', 'Feet From Curb', 'Registration State']].dropna()
-    features = df[['Vehicle Year', 
-                'Feet From Curb', 
-                'Violation Precinct',
-               'Registration State', 
-            #    'Vehicle Body Type', 
-            #    'Vehicle Make',
-            #    'Issuing Agency',
-            #    'Vehicle Color',
-            #    'Unregistered Vehicle?',
-            #    'Hydrant Violation',
-            #    'Double Parking Violation'
-                ]].dropna()
-
+    features = df[['Vehicle Year', 'Feet From Curb', 'Registration State']].dropna()
 
     if not features.empty:
         # Encode categorical features
         for column in ['Registration State']:
             if column not in label_encoders:
-                label_encoders[column] = LabelEncoder()
+                label_encoders[column] = CustomLabelEncoder()
                 features[column] = label_encoders[column].fit_transform(features[column])
             else:
                 features[column] = label_encoders[column].transform(features[column])
