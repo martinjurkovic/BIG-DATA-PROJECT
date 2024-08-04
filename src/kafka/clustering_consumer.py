@@ -1,0 +1,159 @@
+from confluent_kafka import Consumer, KafkaException, KafkaError
+import pandas as pd
+import json
+from collections import deque
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.cluster import MiniBatchKMeans
+from sklearn.metrics import accuracy_score
+import threading
+
+# Kafka Consumer configuration
+conf = {
+    'bootstrap.servers': 'localhost:9092',
+    'group.id': 'nyc_violation_clustering_consumer',
+    'auto.offset.reset': 'earliest'
+}
+
+# Initialize the Kafka consumer
+consumer = Consumer(conf)
+consumer.subscribe(['nyc_violations'])
+
+# Data structures
+batch_size = 1000
+data_window = deque(maxlen=batch_size)
+
+# Initialize the MiniBatchKMeans algorithm
+n_clusters = 10
+clusterer = MiniBatchKMeans(n_clusters=n_clusters, random_state=0, batch_size=batch_size)
+scaler = StandardScaler()
+label_encoders = {}
+fitted = False  # Flag to check if the clusterer has been fitted
+
+borough_map = {
+    "BX": "BX",
+    "BRONX": "BX",
+    "BK": "BK",
+    "BROOKLYN": "BK",
+    "K": "BK",
+    "KINGS": "BK",
+    "MN": "MN",
+    "MANHATTAN": "MN",
+    "Q": "QS",
+    "QS": "QS",
+    "QN": "QS",
+    "QNS": "QS",
+    "QUEENS": "QS",
+    "SI": "SI",
+    "ST": "SI",
+    "STATEN ISLAND": "SI",
+    "NY": "TOTAL",
+    "": "TOTAL",
+    "R": "TOTAL",
+}
+
+# Variables to keep track of accuracy
+true_labels = []
+predicted_labels = []
+
+def process_batch():
+    global clusterer, scaler, label_encoders, true_labels, predicted_labels, fitted
+    # Create a DataFrame from the collected batch
+    df = pd.DataFrame(data_window)
+
+    # Remap boroughs
+    df['Violation County'] = df['Violation County'].apply(lambda x: borough_map.get(x, x))
+    
+    # Convert 'Issue Date' to datetime and extract year and month
+    df['Issue Date'] = pd.to_datetime(df['Issue Date'], errors='coerce')
+    df['YearMonth'] = df['Issue Date'].dt.to_period('M').astype(str)
+    
+    # Filter out rows where 'Vehicle Year' is empty, None, or 0
+    df = df[df['Vehicle Year'].notna() & (df['Vehicle Year'] != '') & (df['Vehicle Year'] != '0') & (df['Vehicle Year'] != 0)]
+    
+    # Convert 'Vehicle Year' to numeric (in case it was read as string)
+    df['Vehicle Year'] = pd.to_numeric(df['Vehicle Year'], errors='coerce')
+    
+    # Filter data where Date year > 2012
+    df = df[df['Issue Date'].dt.year > 2012]
+
+    # Select relevant features for clustering
+    # features = df[['Vehicle Year', 'Feet From Curb', 'Registration State']].dropna()
+    features = df[['Vehicle Year', 
+                'Feet From Curb', 
+                'Violation Precinct',
+               'Registration State', 
+            #    'Vehicle Body Type', 
+            #    'Vehicle Make',
+            #    'Issuing Agency',
+            #    'Vehicle Color',
+            #    'Unregistered Vehicle?',
+            #    'Hydrant Violation',
+            #    'Double Parking Violation'
+                ]].dropna()
+
+
+    if not features.empty:
+        # Encode categorical features
+        for column in ['Registration State']:
+            if column not in label_encoders:
+                label_encoders[column] = LabelEncoder()
+                features[column] = label_encoders[column].fit_transform(features[column])
+            else:
+                features[column] = label_encoders[column].transform(features[column])
+
+        # Scale the features
+        scaled_features = scaler.fit_transform(features)
+
+        # Train the model on the current batch
+        clusterer.partial_fit(scaled_features)
+        fitted = True
+
+        # Predict the cluster for each sample in the batch
+        cluster_labels = clusterer.predict(scaled_features) if fitted else [0] * len(scaled_features)
+
+        # Store true labels and predicted labels for accuracy calculation
+        true_labels.extend(df['Violation Code'])
+        predicted_labels.extend(cluster_labels)
+
+        # Calculate accuracy
+        if len(true_labels) >= batch_size:
+            accuracy = accuracy_score(true_labels[:batch_size], predicted_labels[:batch_size])
+            print(f'Accuracy: {accuracy}')
+            true_labels = true_labels[batch_size:]
+            predicted_labels = predicted_labels[batch_size:]
+
+def process_message(msg):
+    record = json.loads(msg.value())
+    data_window.append(record)
+    
+    # Process the batch if it reaches the batch size
+    if len(data_window) >= batch_size:
+        process_batch()
+        data_window.clear()
+
+def consume_messages():
+    while True:
+        try:
+            msg = consumer.poll(timeout=1.0)
+            if msg is None:
+                continue
+            if msg.error():
+                if msg.error().code() == KafkaError._PARTITION_EOF:
+                    continue
+                else:
+                    print(msg.error())
+            else:
+                process_message(msg)
+        except KeyboardInterrupt:
+            break
+
+# Start the Kafka consumer in a separate thread
+consumer_thread = threading.Thread(target=consume_messages, daemon=True)
+consumer_thread.start()
+
+# Keep the main thread alive to allow background processing
+try:
+    while True:
+        pass
+except KeyboardInterrupt:
+    print("Stopped by user")

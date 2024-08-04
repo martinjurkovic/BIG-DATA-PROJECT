@@ -21,11 +21,14 @@ def delivery_report(err, msg):
 df = pd.read_parquet('../../data/parquet/2014.parquet')
 
 # Iterate over rows and send to Kafka
-print("Started producing messages to Kafka...")
+print_ = True
 for _, row in df.iterrows():
     record_value = row.to_json()
     producer.produce('nyc_violations', key=str(row['Summons Number']), value=record_value, callback=delivery_report)
     producer.poll(0)
+    if print_:
+        print("Started producing messages to Kafka...")
+        print_ = False
 
 # Wait for any outstanding messages to be delivered and delivery reports to be received
 producer.flush()
