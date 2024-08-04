@@ -14,7 +14,8 @@ def delivery_report(err, msg):
     if err is not None:
         print(f"Delivery failed for record {msg.key()}: {err}")
     else:
-        print(f"Record {msg.key()} successfully produced to {msg.topic()} [{msg.partition()}] at offset {msg.offset()}")
+        # print(f"Record {msg.key()} successfully produced to {msg.topic()} [{msg.partition()}] at offset {msg.offset()}")
+        pass
 
 # Read the Parquet file
 df = pd.read_parquet('../../data/parquet/2014.parquet')

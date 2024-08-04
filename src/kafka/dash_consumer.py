@@ -2,6 +2,7 @@ from confluent_kafka import Consumer, KafkaException, KafkaError
 import pandas as pd
 import json
 from collections import deque
+import numpy as np
 import dash
 from dash import dcc, html
 import plotly.graph_objs as go
@@ -22,30 +23,28 @@ consumer.subscribe(['nyc_violations'])
 # Data structures
 batch_size = 1000
 data_window = deque(maxlen=batch_size)
-stats_df = pd.DataFrame(columns=['Date', 'Vehicle Year'])
+stats_df = pd.DataFrame(columns=['YearMonth', 'mean', 'std', 'median', 'max', 'min'])
 
 def process_batch():
     global stats_df
     # Create a DataFrame from the collected batch
     df = pd.DataFrame(data_window)
     
-    # Convert 'Issue Date' to datetime and extract date
-    df['Issue Date'] = pd.to_datetime(df['Issue Date']).dt.date
-    
-    # Rename column for consistency
-    df.rename(columns={'Issue Date': 'Date'}, inplace=True)
+    # Convert 'Issue Date' to datetime and extract year and month
+    df['Issue Date'] = pd.to_datetime(df['Issue Date'], errors='coerce')
+    df['YearMonth'] = df['Issue Date'].dt.to_period('M').astype(str)
     
     # Filter out rows where 'Vehicle Year' is empty, None, or 0
     df = df[df['Vehicle Year'].notna() & (df['Vehicle Year'] != '') & (df['Vehicle Year'] != '0') & (df['Vehicle Year'] != 0)]
     
     # Convert 'Vehicle Year' to numeric (in case it was read as string)
     df['Vehicle Year'] = pd.to_numeric(df['Vehicle Year'], errors='coerce')
-
-    # Filter data where Date year > 2012
-    df = df[df['Date'].apply(lambda x: x.year > 2012)]
     
-    # Aggregate statistics by date
-    grouped = df.groupby('Date').agg({
+    # Filter data where Date year > 2012
+    df = df[df['Issue Date'].dt.year > 2012]
+    
+    # Aggregate statistics by year and month
+    grouped = df.groupby('YearMonth').agg({
         'Vehicle Year': ['mean', 'std', 'median', 'max', 'min']
     })
     
@@ -56,8 +55,8 @@ def process_batch():
     # Append aggregated results to stats_df
     stats_df = pd.concat([stats_df, grouped], ignore_index=True)
     
-    # Drop duplicates to ensure unique dates
-    stats_df = stats_df.groupby('Date').agg({
+    # Drop duplicates to ensure unique YearMonth
+    stats_df = stats_df.groupby('YearMonth').agg({
         'mean': 'mean',
         'std': 'mean',
         'median': 'mean',
@@ -84,7 +83,8 @@ def consume_messages():
                 if msg.error().code() == KafkaError._PARTITION_EOF:
                     continue
                 else:
-                    raise KafkaException(msg.error())
+                    # raise KafkaException(msg.error())
+                    print(msg.error())
             else:
                 process_message(msg)
         except KeyboardInterrupt:
@@ -134,9 +134,9 @@ def update_graphs(n):
         return [empty_fig] * 5
 
     # Sort and plot statistics
-    grouped = stats_df.sort_values(by='Date')
+    grouped = stats_df.sort_values(by='YearMonth')
 
-    dates = grouped['Date']
+    dates = grouped['YearMonth']
     means = grouped['mean']
     stds = grouped['std']
     medians = grouped['median']
@@ -147,45 +147,45 @@ def update_graphs(n):
     mean_fig.add_trace(go.Scatter(x=dates, y=means, mode='lines', name='Mean'))
     mean_fig.update_layout(
         title='Mean Vehicle Year',
-        xaxis_title='Date',
+        xaxis_title='Year-Month',
         yaxis_title='Mean Vehicle Year',
-        xaxis=dict(tickformat='%Y-%m-%d', tickmode='auto')
+        xaxis=dict(tickformat='%Y-%m', tickmode='auto')
     )
 
     std_fig = go.Figure()
     std_fig.add_trace(go.Scatter(x=dates, y=stds, mode='lines', name='Std Dev'))
     std_fig.update_layout(
         title='Standard Deviation of Vehicle Year',
-        xaxis_title='Date',
+        xaxis_title='Year-Month',
         yaxis_title='Standard Deviation',
-        xaxis=dict(tickformat='%Y-%m-%d', tickmode='auto')
+        xaxis=dict(tickformat='%Y-%m', tickmode='auto')
     )
 
     median_fig = go.Figure()
     median_fig.add_trace(go.Scatter(x=dates, y=medians, mode='lines', name='Median'))
     median_fig.update_layout(
         title='Median Vehicle Year',
-        xaxis_title='Date',
+        xaxis_title='Year-Month',
         yaxis_title='Median Vehicle Year',
-        xaxis=dict(tickformat='%Y-%m-%d', tickmode='auto')
+        xaxis=dict(tickformat='%Y-%m', tickmode='auto')
     )
 
     max_fig = go.Figure()
     max_fig.add_trace(go.Scatter(x=dates, y=maxs, mode='lines', name='Max'))
     max_fig.update_layout(
         title='Maximum Vehicle Year',
-        xaxis_title='Date',
+        xaxis_title='Year-Month',
         yaxis_title='Maximum Vehicle Year',
-        xaxis=dict(tickformat='%Y-%m-%d', tickmode='auto')
+        xaxis=dict(tickformat='%Y-%m', tickmode='auto')
     )
 
     min_fig = go.Figure()
     min_fig.add_trace(go.Scatter(x=dates, y=mins, mode='lines', name='Min'))
     min_fig.update_layout(
         title='Minimum Vehicle Year',
-        xaxis_title='Date',
+        xaxis_title='Year-Month',
         yaxis_title='Minimum Vehicle Year',
-        xaxis=dict(tickformat='%Y-%m-%d', tickmode='auto')
+        xaxis=dict(tickformat='%Y-%m', tickmode='auto')
     )
 
     return [mean_fig, std_fig, median_fig, max_fig, min_fig]
