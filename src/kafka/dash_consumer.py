@@ -2,7 +2,6 @@ from confluent_kafka import Consumer, KafkaException, KafkaError
 import pandas as pd
 import json
 from collections import deque
-import numpy as np
 import dash
 from dash import dcc, html
 import plotly.graph_objs as go
@@ -120,7 +119,7 @@ consumer_thread = threading.Thread(target=consume_messages, daemon=True)
 consumer_thread.start()
 
 # Create Dash application
-app = dash.Dash(__name__)
+app = dash.Dash(__name__, suppress_callback_exceptions=True)
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
@@ -288,7 +287,6 @@ def update_borough_graphs(n):
     # Sort and plot borough-wise statistics
     grouped = stats_df.sort_values(by=['YearMonth', 'Violation County'])
 
-    dates = grouped['YearMonth'].unique()
     boroughs = grouped['Violation County'].unique()
 
     # Initialize figures
