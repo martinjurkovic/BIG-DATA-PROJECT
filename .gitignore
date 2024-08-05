@@ -4,6 +4,7 @@ data/CSV/*
 data/parquet/*
 data/HDF5/*
 data/duckdb/*
+data/CSV_new/*
 
 
 # Byte-compiled / optimized / DLL files

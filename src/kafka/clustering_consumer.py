@@ -19,11 +19,11 @@ consumer = Consumer(conf)
 consumer.subscribe(['nyc_violations'])
 
 # Data structures
-batch_size = 1000
+batch_size = 10000
 data_window = deque(maxlen=batch_size)
 
 # Initialize the MiniBatchKMeans algorithm
-n_clusters = 10
+n_clusters = 99
 clusterer = MiniBatchKMeans(n_clusters=n_clusters, random_state=0, batch_size=batch_size)
 scaler = StandardScaler()
 label_encoders = {}
