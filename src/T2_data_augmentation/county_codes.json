@@ -1,0 +1,26 @@
+{
+    "BX": "Bronx",
+    "BRONX": "Bronx",
+    "BK": "Brooklyn",
+    
+    "BROOKLYN": "Brooklyn",
+    "K": "Brooklyn",
+    "KINGS": "Brooklyn",
+
+    "MN": "Manhattan",
+    "MANHATTAN": "Manhattan",
+    "NY": "Manhattan",
+    
+    "Q": "Queens",
+    "QS": "Queens",
+    "QN": "Queens",
+    "QNS": "Queens",
+    "QUEENS": "Queens",
+    "QUEEN": "Queens",
+    
+    "SI": "Staten Island",
+    "ST": "Staten Island",
+    "STATEN ISLAND": "Staten Island",
+    "RICH": "Staten Island",
+    "R": "Staten Island"
+}
