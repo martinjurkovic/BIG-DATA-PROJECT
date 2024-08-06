@@ -76,6 +76,7 @@ columns = [
     "Double Parking Violation",
 ]
 
+
 def main():
     time_dict = {}
 
@@ -85,11 +86,25 @@ def main():
             print(f"Converting {file} to HDF5.")
             # read the csv file
             start_time = time.time()
-            df = pd.read_csv(CSV_PATH / file, low_memory=False, names=columns, header=0)
-            df.to_hdf(HDF5_PATH / (file.split(".")[0] + ".h5"), key="df", mode="w")
+            df = pd.read_csv(
+                CSV_PATH / file, low_memory=False, names=columns, header=0
+            ).sample(frac=0.01)
+            for col in df.columns:
+                if col == "Issue Date" or col == "Vehicle Expiration Date":
+                    df[col] = pd.to_datetime(df[col], errors="coerce")
+                if df[col].dtype == "object":
+                    df[col] = df[col].astype("|S20")
+                elif df[col].dtype == "float64":
+                    df[col] = df[col].astype("float32")
+            df.to_hdf(
+                HDF5_PATH / (file.split(".")[0] + ".h5"),
+                key="data",
+                mode="w",
+                format="table",
+                data_columns=True,
+            )
             end_time = time.time()
             time_dict[file] = end_time - start_time
-            break
 
     # save the time taken to convert each file to a HDF5 file
     with open(FILE_DIR_PATH / "csv_to_hdf5_times.txt", "w") as f:
@@ -101,6 +116,7 @@ def main():
         ) ** 0.5
         f.write(f"\nMean Time: {mean_time:.2f} seconds\n")
         f.write(f"Standard Deviation: {std_time:.2f} seconds\n")
+
 
 if __name__ == "__main__":
     run_with_memory_log(main, FILE_DIR_PATH / "csv_to_hdf5_memory_log.txt")
