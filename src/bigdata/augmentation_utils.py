@@ -1,4 +1,12 @@
 import dask.dataframe as dd
+import duckdb
+from pathlib import Path
+
+def get_duckdb_connection(path):
+    dir_path = Path(path).parent
+    table_name = Path(path).name.split(".")[0]
+    conn = duckdb.connect(str(dir_path / "nyc_database.db"))
+    return conn, table_name
 
 
 def read_data(path, format, dtype=None, **kwargs):
@@ -17,7 +25,9 @@ def read_data(path, format, dtype=None, **kwargs):
     elif format == "hdf5":
         return dd.read_hdf(path, key="data")
     elif format == "duckdb":
-        raise NotImplementedError("DuckDB is not supported yet")
+        conn, table_name = get_duckdb_connection(path)
+        df = conn.execute(f"SELECT * FROM {table_name}").fetchdf()
+        return dd.from_pandas(df)
     else:
         raise ValueError(f"Unsupported format: {format}")
 
@@ -30,6 +40,7 @@ def save_data(path, df, format):
     elif format == "hdf5":
         df.to_hdf(path, key="data")
     elif format == "duckdb":
-        raise NotImplementedError("DuckDB is not supported yet")
+        conn, table_name = get_duckdb_connection(path)
+        conn.execute(f"CREATE TABLE {table_name} AS SELECT * FROM df")
     else:
         raise ValueError(f"Unsupported format: {format}")
