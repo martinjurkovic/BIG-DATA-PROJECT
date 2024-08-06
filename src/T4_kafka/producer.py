@@ -1,66 +1,34 @@
-import os
-import socket
-import json
-from argparse import ArgumentParser
 from confluent_kafka import Producer
+import pandas as pd
 
+# Kafka Producer configuration
+conf = {
+    'bootstrap.servers': 'localhost:9092'
+}
 
-def file_reader(file_path):
-    with open(file_path, "r") as file:
-        header_line = file.readline()
-        keys = header_line.strip().split(",")
-        for line in file:
-            items = line.strip().split(",")
-            yield {key: value for key, value in zip(keys, items)}
+# Initialize the Kafka producer
+producer = Producer(conf)
 
+# Callback function when a message is delivered
+def delivery_report(err, msg):
+    if err is not None:
+        print(f"Delivery failed for record {msg.key()}: {err}")
+    else:
+        # print(f"Record {msg.key()} successfully produced to {msg.topic()} [{msg.partition()}] at offset {msg.offset()}")
+        pass
 
-if __name__ == "__main__":
-    # Parse the command line.
-    # parser = ArgumentParser()
-    # parser.add_argument('station', type=int, default=0, help='The station number to produce data for.')
-    # args = parser.parse_args()
+# Read the Parquet file
+df = pd.read_parquet('../../data/parquet/2014.parquet')
 
-    # Create Producer instance
-    # producer = Producer(config)
-    producer = Producer(
-        {"bootstrap.servers": "localhost:29092", "client.id": socket.gethostname()}
-    )
+# Iterate over rows and send to Kafka
+print_ = True
+for _, row in df.iterrows():
+    record_value = row.to_json()
+    producer.produce('nyc_violations', key=str(row['Summons Number']), value=record_value, callback=delivery_report)
+    producer.poll(0)
+    if print_:
+        print("Started producing messages to Kafka...")
+        print_ = False
 
-    # Message delivery callback (triggered by poll() or flush())
-    # when a message has been successfully delivered or permanently
-    # failed delivery (after retries).
-    def delivery_callback(err, msg):
-        if err:
-            print("ERROR: Message failed delivery: {}".format(err))
-        else:
-            print(
-                "Produced event to topic {topic}: key = {key:12} value = {value:12}".format(
-                    topic=msg.topic(),
-                    key=msg.key().decode("utf-8"),
-                    value=msg.value().decode("utf-8"),
-                )
-            )
-
-    DATA_PATH = "data/CSV"
-    data_files = os.listdir(DATA_PATH)
-    for file in data_files:
-        if not file.endswith(".csv"):
-            continue
-        filepath = os.path.join(DATA_PATH, file)
-        count = 0
-        for row_data in file_reader(filepath):
-            row_data_bytes = json.dumps(row_data).encode("utf-8")
-            producer.produce(
-                topic="nyc_tickets",
-                key=row_data["Violation County"],
-                value=row_data_bytes,
-                callback=delivery_callback,
-            )
-            count += 1
-            if count % 10000 == 0:
-                producer.poll(10000)
-                producer.flush()
-
-    # Block until the messages are sent.
-    producer.poll(10000)
-    producer.flush()
+# Wait for any outstanding messages to be delivered and delivery reports to be received
+producer.flush()
