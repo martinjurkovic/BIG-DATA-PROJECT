@@ -1,1 +1,0 @@
-duckdb data/duckdb/nyc.db

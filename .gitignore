@@ -6,6 +6,7 @@ data/HDF5/*
 data/duckdb/*
 data/CSV_new/*
 **/figs/*
+dask_duckdb
 
 
 # Byte-compiled / optimized / DLL files
