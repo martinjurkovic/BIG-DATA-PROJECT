@@ -63,10 +63,8 @@ def read_duckdb_files(base_path, usecols=None, years=None):
     Returns:
     - Pandas DataFrame containing the queried data
     """
-    DUCKDB_PATH = Path(base_path) / "BIG-DATA-PROJECT/data/duckdb/"
-
     # Create a DuckDB connection
-    conn = duckdb.connect(str(DUCKDB_PATH / "nyc_database.db"))
+    conn = duckdb.connect(str(Path(base_path) / "nyc_database.db"))
     # Handle columns with spaces
     columns = usecols
     if columns:
