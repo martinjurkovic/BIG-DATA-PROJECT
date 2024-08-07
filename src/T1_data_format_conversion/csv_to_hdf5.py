@@ -4,6 +4,7 @@ import time
 import pandas as pd
 import argparse
 from bigdata.utils import run_with_memory_log
+from bigdata.hdf5 import save_to_hdf5
 
 FILE_PATH = Path(__file__).resolve()
 FILE_DIR_PATH = FILE_PATH.parent
@@ -88,21 +89,10 @@ def main():
             start_time = time.time()
             df = pd.read_csv(
                 CSV_PATH / file, low_memory=False, names=columns, header=0
-            ).sample(frac=0.01)
-            for col in df.columns:
-                if col == "Issue Date" or col == "Vehicle Expiration Date":
-                    df[col] = pd.to_datetime(df[col], errors="coerce")
-                if df[col].dtype == "object":
-                    df[col] = df[col].astype("|S20")
-                elif df[col].dtype == "float64":
-                    df[col] = df[col].astype("float32")
-            df.to_hdf(
-                HDF5_PATH / (file.split(".")[0] + ".h5"),
-                key="data",
-                mode="w",
-                format="table",
-                data_columns=True,
             )
+
+            save_to_hdf5(HDF5_PATH / (file.split(".")[0] + ".h5"), df)
+
             end_time = time.time()
             time_dict[file] = end_time - start_time
 
