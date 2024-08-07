@@ -119,4 +119,4 @@ def main():
 
 
 if __name__ == "__main__":
-    run_with_memory_log(main, FILE_DIR_PATH / "csv_to_hdf5_memory_log.txt")
+    run_with_memory_log(main, FILE_DIR_PATH / "T1_csv_to_hdf5_memory_log.txt")

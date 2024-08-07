@@ -112,4 +112,4 @@ def main():
         f.write(f"Standard Deviation: {std_time:.2f} seconds\n")
 
 if __name__ == "__main__":
-    run_with_memory_log(main, FILE_DIR_PATH / "csv_to_parquet_memory_log.txt")
+    run_with_memory_log(main, FILE_DIR_PATH / "T1_csv_to_parquet_memory_log.txt")

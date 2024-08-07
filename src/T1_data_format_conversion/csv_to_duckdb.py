@@ -41,4 +41,4 @@ def main():
         f.write(f"Time to convert CSV files to DuckDB: {end_time - start_time:.2f} seconds\n, or per file: {(end_time - start_time) / len(list(PARQUET_PATH.glob('*.parquet'))):.2f} seconds\n")
 
 if __name__ == "__main__":
-    run_with_memory_log(main, FILE_DIR_PATH / "csv_to_duckdb_memory_log.txt")
+    run_with_memory_log(main, FILE_DIR_PATH / "T1_csv_to_duckdb_memory_log.txt")
