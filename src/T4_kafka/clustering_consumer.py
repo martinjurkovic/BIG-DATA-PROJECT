@@ -6,6 +6,7 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.metrics import accuracy_score
 import threading
+from bigdata.utils import county_map
 
 # Kafka Consumer configuration
 conf = {
@@ -23,33 +24,11 @@ batch_size = 10000
 data_window = deque(maxlen=batch_size)
 
 # Initialize the MiniBatchKMeans algorithm
-n_clusters = 99
+n_clusters = 2
 clusterer = MiniBatchKMeans(n_clusters=n_clusters, random_state=0, batch_size=batch_size)
 scaler = StandardScaler()
 label_encoders = {}
 fitted = False  # Flag to check if the clusterer has been fitted
-
-borough_map = {
-    "BX": "BX",
-    "BRONX": "BX",
-    "BK": "BK",
-    "BROOKLYN": "BK",
-    "K": "BK",
-    "KINGS": "BK",
-    "MN": "MN",
-    "MANHATTAN": "MN",
-    "Q": "QS",
-    "QS": "QS",
-    "QN": "QS",
-    "QNS": "QS",
-    "QUEENS": "QS",
-    "SI": "SI",
-    "ST": "SI",
-    "STATEN ISLAND": "SI",
-    "NY": "TOTAL",
-    "": "TOTAL",
-    "R": "TOTAL",
-}
 
 # Variables to keep track of accuracy
 true_labels = []
@@ -79,8 +58,23 @@ def process_batch():
     # Create a DataFrame from the collected batch
     df = pd.DataFrame(data_window)
 
+    numericals = ['Vehicle Year', 'Feet From Curb']
+
+    categoricals = [
+        "Plate Type",
+        "Violation Code",
+        "Vehicle Body Type",
+        "Vehicle Make",
+        "Issuing Agency",
+        "Violation County",
+        # "Violation Legal Code",
+        # "Unregistered Vehicle?",
+    ]
+
+    df = df.dropna(subset=numericals+categoricals+['Registration State'])
+
     # Remap boroughs
-    df['Violation County'] = df['Violation County'].apply(lambda x: borough_map.get(x, x))
+    df['Violation County'] = df['Violation County'].apply(lambda x: county_map.get(x, x))
     
     # Convert 'Issue Date' to datetime and extract year and month
     df['Issue Date'] = pd.to_datetime(df['Issue Date'], errors='coerce')
@@ -96,29 +90,39 @@ def process_batch():
     df = df[df['Issue Date'].dt.year > 2012]
 
     # Select relevant features for clustering
-    features = df[['Vehicle Year', 'Feet From Curb', 'Registration State']].dropna()
+    
+    features = df[numericals+categoricals]
+
+    # print which features are NA
+    # print(features.isna().sum())
+
+    y = (df['Registration State'] == "NY").astype(int)
+
+    # print(features.shape)
+    # print(y.shape)
 
     if not features.empty:
         # Encode categorical features
-        for column in ['Registration State']:
+        for column in categoricals:
             if column not in label_encoders:
                 label_encoders[column] = CustomLabelEncoder()
-                features[column] = label_encoders[column].fit_transform(features[column])
+                features.loc[:, column] = label_encoders[column].fit_transform(features[column])
+
             else:
-                features[column] = label_encoders[column].transform(features[column])
+                features.loc[:, column] = label_encoders[column].transform(features[column])
 
         # Scale the features
         scaled_features = scaler.fit_transform(features)
+
+        # Predict the cluster for each sample in the batch
+        cluster_labels = clusterer.predict(scaled_features) if fitted else [0] * len(scaled_features)
 
         # Train the model on the current batch
         clusterer.partial_fit(scaled_features)
         fitted = True
 
-        # Predict the cluster for each sample in the batch
-        cluster_labels = clusterer.predict(scaled_features) if fitted else [0] * len(scaled_features)
-
         # Store true labels and predicted labels for accuracy calculation
-        true_labels.extend(df['Violation Code'])
+        true_labels.extend(y)
         predicted_labels.extend(cluster_labels)
 
         # Calculate accuracy
