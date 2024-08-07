@@ -4,28 +4,35 @@ import argparse
 
 import numpy as np
 import pandas as pd
-import dask.dataframe as dd
-from dask_ml.linear_model import LinearRegression
-from dask_ml.preprocessing import StandardScaler
-from sklearn.linear_model import SGDRegressor
 import xgboost as xgb
+import dask.dataframe as dd
+from dask_ml.preprocessing import StandardScaler
+from dask_ml.linear_model import LinearRegression
+from dask.distributed import LocalCluster, Client
+from sklearn.linear_model import SGDRegressor
 from sklearn.metrics import mean_squared_error
 
 from bigdata.ml_utils import plot_results
 from bigdata.utils import read_files, county_map, run_with_memory_log
 from bigdata.augmentation_utils import read_data
 
-args = argparse.ArgumentParser(description="High Ticket Days Prediction")
-args.add_argument(
+parser = argparse.ArgumentParser(description="High Ticket Days Prediction")
+parser.add_argument(
     "--format",
     type=str,
     help="Format of the data",
     choices=["csv", "parquet", "hdf5", "duckdb"],
     default="csv",
 )
+parser.add_argument("--n_workers", type=int, help="Number of workers", required=True)
+parser.add_argument(
+    "--memory_limit", type=str, help="Memory limit for each worker", default=None
+)
 
-args = args.parse_args()
+args = parser.parse_args()
 fmt = args.format
+memory_limit = args.memory_limit
+n_workers = args.n_workers
 
 FILE_PATH = __file__
 ROOT_DIR = FILE_PATH.split("src")[0]
@@ -258,14 +265,18 @@ def main():
     model_performance["SGD"] = rmse
 
     # Save processing times
-    times_log_path = os.path.join("logs", f"T5b_{fmt}_times.txt")
+    times_log_path = os.path.join(
+        "logs", f"T5b_{fmt}_memory_lim_{memory_limit*n_workers}_times.txt"
+    )
     with open(times_log_path, "w") as f:
         for key, value in processing_times.items():
             print(f"{key :<17}: {value} seconds")
             f.write(f"{key :<17}: {value} seconds\n")
 
     # Save model performance
-    performance_log_path = os.path.join("logs", f"T5b_{fmt}_performance.txt")
+    performance_log_path = os.path.join(
+        "logs", f"T5b_{fmt}_memory_lim_{memory_limit*n_workers}_performance.txt"
+    )
     with open(performance_log_path, "w") as f:
         for key, value in model_performance.items():
             print(f"{key :<17}: {value}")
@@ -273,7 +284,16 @@ def main():
 
 
 if __name__ == "__main__":
+    if memory_limit is None:
+        memory_limit = 32 / n_workers
+
+    memory_string = f"{memory_limit}GiB"
+
+    cluster = LocalCluster(n_workers=n_workers, memory_limit=memory_string)
+    client = Client(cluster)
     run_with_memory_log(
         main,
-        os.path.join("logs", f"T5b_{fmt}_memory_log.txt"),
+        os.path.join(
+            "logs", f"T5b_{fmt}_memory_lim_{memory_limit*n_workers}_memory_log.txt"
+        ),
     )

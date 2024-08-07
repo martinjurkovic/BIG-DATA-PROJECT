@@ -10,6 +10,8 @@ import geopandas
 from geodatasets import get_path
 import matplotlib.pyplot as plt
 import dask.dataframe as dd
+from dask.distributed import LocalCluster, Client
+
 
 from bigdata.augmentation_utils import read_data, save_data
 from bigdata.utils import run_with_memory_log
@@ -20,19 +22,27 @@ DATA_DIR = FILE_PATH.split("src")[0] + "data"
 
 
 def parse_args():
-    args = argparse.ArgumentParser(description="Convert CSV files to Parquet format.")
-    args.add_argument(
+    parser = argparse.ArgumentParser(description="Convert CSV files to Parquet format.")
+    parser.add_argument(
         "--format",
         type=str,
         help="Format of the data",
         choices=["csv", "parquet", "hdf5", "duckdb"],
         default="hdf5",
     )
-    return args.parse_args()
+    parser.add_argument(
+        "--n_workers", type=int, help="Number of workers", required=True
+    )
+    parser.add_argument(
+        "--memory_limit", type=str, help="Memory limit for each worker", default=None
+    )
+    return parser.parse_args()
 
 
 args = parse_args()
 fmt = args.format
+memory_limit = args.memory_limit
+n_workers = args.n_workers
 
 
 def main():
@@ -774,7 +784,10 @@ def main():
     processing_times["Weather"] = end_time - start_time
     print("Done!")
 
-    times_log_path = os.path.join("logs", f"T2_{fmt}_times.txt")
+    times_log_path = os.path.join(
+        "logs",
+        f"T2_{fmt}__n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_times.txt",
+    )
     with open(times_log_path, "w") as f:
         times = []
         for key, value in processing_times.items():
@@ -791,7 +804,17 @@ def main():
 
 
 if __name__ == "__main__":
+    if memory_limit is None:
+        memory_limit = 32 / n_workers
+
+    memory_string = f"{memory_limit}GiB"
+
+    cluster = LocalCluster(n_workers=n_workers, memory_limit=memory_string)
+    client = Client(cluster)
     run_with_memory_log(
         main,
-        os.path.join("logs", f"T2_{fmt}_memory_log.txt"),
+        os.path.join(
+            "logs",
+            f"T2_{fmt}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_memory_log.txt",
+        ),
     )
