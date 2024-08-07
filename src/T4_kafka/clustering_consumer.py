@@ -6,6 +6,10 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.metrics import accuracy_score
 import threading
+import plotly.graph_objs as go
+import dash
+from dash import dcc, html
+from dash.dependencies import Output, Input
 from bigdata.utils import county_map
 
 # Kafka Consumer configuration
@@ -22,6 +26,7 @@ consumer.subscribe(['nyc_violations'])
 # Data structures
 batch_size = 10000
 data_window = deque(maxlen=batch_size)
+accuracy_history = deque(maxlen=100)  # Store up to 100 accuracy values for plotting
 
 # Initialize the MiniBatchKMeans algorithm
 n_clusters = 2
@@ -54,7 +59,7 @@ class CustomLabelEncoder:
         return self.transform(data)
 
 def process_batch():
-    global clusterer, scaler, label_encoders, true_labels, predicted_labels, fitted
+    global clusterer, scaler, label_encoders, true_labels, predicted_labels, fitted, accuracy_history
     # Create a DataFrame from the collected batch
     df = pd.DataFrame(data_window)
 
@@ -98,9 +103,6 @@ def process_batch():
 
     y = (df['Registration State'] == "NY").astype(int)
 
-    # print(features.shape)
-    # print(y.shape)
-
     if not features.empty:
         # Encode categorical features
         for column in categoricals:
@@ -131,6 +133,7 @@ def process_batch():
             print(f'Accuracy: {accuracy}')
             true_labels = true_labels[batch_size:]
             predicted_labels = predicted_labels[batch_size:]
+            accuracy_history.append(accuracy)
 
 def process_message(msg):
     record = json.loads(msg.value())
@@ -161,9 +164,37 @@ def consume_messages():
 consumer_thread = threading.Thread(target=consume_messages, daemon=True)
 consumer_thread.start()
 
-# Keep the main thread alive to allow background processing
-try:
-    while True:
-        pass
-except KeyboardInterrupt:
-    print("Stopped by user")
+# Set up the Dash app
+app = dash.Dash(__name__)
+
+app.layout = html.Div([
+    dcc.Graph(id='accuracy-graph'),
+    dcc.Interval(
+        id='interval-component',
+        interval=5*1000,  # in milliseconds
+        n_intervals=0
+    )
+])
+
+@app.callback(Output('accuracy-graph', 'figure'),
+              [Input('interval-component', 'n_intervals')])
+def update_graph_live(n):
+    global accuracy_history
+    figure = {
+        'data': [
+            go.Scatter(
+                x=[i * batch_size for i in range(len(accuracy_history))],
+                y=list(accuracy_history),
+                mode='lines+markers'
+            )
+        ],
+        'layout': {
+            'title': 'Clustering Accuracy Over Time',
+            'xaxis': {'title': 'Num Messages'},
+            'yaxis': {'title': 'Accuracy'}
+        }
+    }
+    return figure
+
+if __name__ == '__main__':
+    app.run_server(debug=True, use_reloader=False)
