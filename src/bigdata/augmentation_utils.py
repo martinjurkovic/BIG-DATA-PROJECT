@@ -2,6 +2,9 @@ import dask.dataframe as dd
 import duckdb
 from pathlib import Path
 
+from .hdf5 import save_to_hdf5
+
+
 def get_duckdb_connection(path):
     dir_path = Path(path).parent
     table_name = Path(path).name.split(".")[0]
@@ -25,7 +28,7 @@ def read_data(path, format, dtype=None, **kwargs):
     elif format == "hdf5":
         return dd.read_hdf(path, key="data")
     elif format == "duckdb":
-        conn, table_name = get_duckdb_connection(path)
+        conn, table_name = get_duckdb_connection(path.replace(" ", "_"))
         df = conn.execute(f"SELECT * FROM {table_name}").fetchdf()
         return dd.from_pandas(df)
     else:
@@ -38,9 +41,10 @@ def save_data(path, df, format):
     elif format == "parquet":
         df.to_parquet(path, engine="pyarrow")
     elif format == "hdf5":
-        df.to_hdf(path, key="data")
+        save_to_hdf5(path, df)
+        # df.to_hdf(path, key="data")
     elif format == "duckdb":
-        conn, table_name = get_duckdb_connection(path)
+        conn, table_name = get_duckdb_connection(path.replace(" ", "_"))
         conn.execute(f"CREATE TABLE {table_name} AS SELECT * FROM df")
     else:
         raise ValueError(f"Unsupported format: {format}")
