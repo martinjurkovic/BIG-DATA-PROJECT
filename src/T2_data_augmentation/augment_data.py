@@ -774,7 +774,7 @@ def main():
     processing_times["Weather"] = end_time - start_time
     print("Done!")
 
-    times_log_path = os.path.join(os.path.dirname(FILE_PATH), f"T2_{fmt}_times.txt")
+    times_log_path = os.path.join("logs", f"T2_{fmt}_times.txt")
     with open(times_log_path, "w") as f:
         times = []
         for key, value in processing_times.items():
@@ -793,5 +793,5 @@ def main():
 if __name__ == "__main__":
     run_with_memory_log(
         main,
-        os.path.join(os.path.dirname(FILE_PATH), f"T2_{fmt}_memory_log.txt"),
+        os.path.join("logs", f"T2_{fmt}_memory_log.txt"),
     )

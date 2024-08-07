@@ -1,4 +1,5 @@
 # PROJECT
+/logs
 data/CSV/*
 !data/CSV/nyt.sh
 data/parquet/*
