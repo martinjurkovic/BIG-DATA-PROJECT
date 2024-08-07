@@ -7,6 +7,7 @@ from pathlib import Path
 import argparse
 from bigdata.utils import read_files
 from bigdata.utils import run_with_memory_log
+from dask.distributed import LocalCluster, Client
 
 FILE_PATH = Path(__file__).resolve()
 FILE_DIR_PATH = FILE_PATH.parent
@@ -19,9 +20,11 @@ fig_dir.mkdir(exist_ok=True)
 parser = argparse.ArgumentParser(description='EDA Script')
 
 # Add arguments
-parser.add_argument('--base_path', type=str, help='Base path for file location')
-parser.add_argument('--file_format', type=str, help='File format')
-parser.add_argument('--years', nargs='+', type=str, help='List of years')
+parser.add_argument('--base_path', type=str, help='Base path for file location', required=True)
+parser.add_argument('--file_format', type=str, help='File format', required=True)
+parser.add_argument('--years', nargs='+', type=str, help='List of years', required=True)
+parser.add_argument('--n_workers', type=int, help='Number of workers', required=True)
+parser.add_argument('--memory_limit', type=str, help='Memory limit for each worker', default=None)
 
 # Parse the arguments
 args = parser.parse_args()
@@ -30,6 +33,9 @@ args = parser.parse_args()
 base_path = args.base_path
 file_format = args.file_format
 years = args.years
+n_workers=args.n_workers
+memory_limit=args.memory_limit
+
 
 def main():
     # Initialize list to store times for each plot
@@ -239,4 +245,11 @@ def main():
     # %%
 
 if __name__ == '__main__':
-    run_with_memory_log(main, FILE_DIR_PATH / f'eda_{file_format}_memory_log.txt')
+    if memory_limit is None:
+        memory_limit = 32 / n_workers
+
+    memory_string = f'{memory_limit}GiB'
+
+    cluster = LocalCluster(n_workers=n_workers, memory_limit=memory_string)
+    client = Client(cluster)
+    run_with_memory_log(main, FILE_DIR_PATH / f'eda_{file_format}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_memory_log.txt')
