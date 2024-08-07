@@ -9,6 +9,9 @@ data/CSV_new/*
 **/figs/*
 dask_duckdb
 
+# Debuging
+launch.json
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
