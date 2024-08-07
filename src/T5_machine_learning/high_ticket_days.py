@@ -16,12 +16,12 @@ from bigdata.utils import read_files, county_map, run_with_memory_log
 from bigdata.augmentation_utils import read_data
 
 # TODO: support all formats and add logging
-args = argparse.ArgumentParser(description="Convert CSV files to Parquet format.")
+args = argparse.ArgumentParser(description="High Ticket Days Prediction")
 args.add_argument(
     "--format",
     type=str,
     help="Format of the data",
-    choices=["csv", "parquet", "hdf5"],
+    choices=["csv", "parquet", "hdf5", "duckdb"],
     default="csv",
 )
 
@@ -32,7 +32,7 @@ FILE_PATH = __file__
 ROOT_DIR = FILE_PATH.split("src")[0]
 DATA_DIR = ROOT_DIR + "data"
 
-START_DATE = "2020-01-01"
+START_DATE = "2014-01-01"
 END_DATE = "2024-01-01"
 TEST_DATE = "2023-01-01"
 
@@ -46,13 +46,12 @@ def main():
     columns = ["Issue Date", "Violation County"]
 
     ddf = read_files(
-        os.path.join(DATA_DIR, "CSV"),
+        os.path.join(DATA_DIR, fmt),
         file_format=fmt,
         usecols=columns,
         dtype={"Violation County": "str"},
         years=list(range(2014, 2024)),
     )
-    ddf = ddf.sample(0.01)  # TODO: remove resampling
     end_time = time.time()
     print(f"Time to read data: {end_time - start_time:.2f} seconds")
     processing_times["Read Data"] = end_time - start_time
@@ -62,13 +61,16 @@ def main():
 
     def remap_county_codes(code):
         if str(code).upper() not in county_map.keys():
-            return float("nan")
+            return "-"
         return county_map[code.upper()]
 
+    # Filter dates
+    ddf["Issue Date"] = dd.to_datetime(ddf["Issue Date"], format="mixed")
+    ddf = ddf.loc[(ddf["Issue Date"] >= START_DATE) & (ddf["Issue Date"] < END_DATE)]
     # Unify county codes
-    ddf["Violation County"] = ddf["Violation County"].apply(remap_county_codes)
+    ddf["Violation County"] = ddf["Violation County"].map(remap_county_codes)
     # Drop rows with missing county codes
-    ddf = ddf.dropna(subset=["Violation County"])
+    ddf = ddf.loc[ddf["Violation County"] != "-"]
 
     def reindex(df, date_column, resample_freq="D"):
         df[date_column] = dd.to_datetime(df[date_column])
@@ -77,10 +79,6 @@ def main():
         return df
 
     def get_augmented_data_borough(borough):
-        # Open Business Data
-        # busineses_df = pd.read_csv(
-        #     os.path.join(DATA_DIR, "CSV", f"{borough}_business_openings.{fmt}")
-        # )
         busineses_df = read_data(
             os.path.join(
                 DATA_DIR, fmt, "augmented", f"{borough}_business_openings.{fmt}"
@@ -90,7 +88,6 @@ def main():
         busineses_df = reindex(busineses_df, "datetime")
 
         # Events Data
-        # events_df = pd.read_csv(os.path.join(DATA_DIR, "CSV", f"{borough}_events.{fmt}"))
         events_df = read_data(
             os.path.join(DATA_DIR, fmt, "augmented", f"{borough}_events.{fmt}"),
             format=fmt,
@@ -98,9 +95,6 @@ def main():
         events_df = reindex(events_df, "datetime")
 
         # Landmarks Data
-        # landmarks_df = pd.read_csv(
-        #     os.path.join(DATA_DIR, "CSV", f"{borough}_landmarks.{fmt}")
-        # )
         landmarks_df = read_data(
             os.path.join(DATA_DIR, fmt, "augmented", f"{borough}_landmarks.{fmt}"),
             format=fmt,
@@ -108,9 +102,6 @@ def main():
         landmarks_df = reindex(landmarks_df, "datetime")
 
         # School open Data
-        # schools_df = pd.read_csv(
-        #     os.path.join(DATA_DIR, "CSV", f"{borough}_school_openings.{fmt}")
-        # )
         schools_df = read_data(
             os.path.join(
                 DATA_DIR, fmt, "augmented", f"{borough}_school_openings.{fmt}"
@@ -120,7 +111,6 @@ def main():
         schools_df = reindex(schools_df, "datetime")
 
         # Weather Data
-        # weather_df = pd.read_csv(os.path.join(DATA_DIR, "CSV", f"{borough}_weather.{fmt}"))
         weather_df = read_data(
             os.path.join(DATA_DIR, fmt, "augmented", f"{borough}_weather.{fmt}"),
             format=fmt,
@@ -173,20 +163,13 @@ def main():
     dfs = get_augmented_data()
 
     ddf["tickets"] = 1
-    ddf = ddf.groupby(["Issue Date", "Violation County"]).sum()
-    ddf = ddf.reset_index()
-
-    ddf["Issue Date"] = dd.to_datetime(ddf["Issue Date"], format="mixed")
-    ddf = ddf.loc[(ddf["Issue Date"] >= START_DATE) & (ddf["Issue Date"] < END_DATE)]
+    df = ddf.groupby(["Issue Date", "Violation County"]).sum().compute().reset_index()
 
     county_dfs = []
-    ddf = ddf.persist()
     for county, aug_df in dfs.items():
-        mask = ddf["Violation County"] == county
-        merged = (
-            ddf.loc[mask]
-            .compute()
-            .merge(aug_df, left_on="Issue Date", right_index=True, how="left")
+        mask = df["Violation County"] == county
+        merged = df.loc[mask].merge(
+            aug_df, left_on="Issue Date", right_index=True, how="left"
         )
         county_dfs.append(merged)
 
@@ -286,8 +269,8 @@ def main():
     performance_log_path = os.path.join("logs", f"T3_{fmt}_performance.txt")
     with open(performance_log_path, "w") as f:
         for key, value in model_performance.items():
-            print(f"{key :<10}: {value}")
-            f.write(f"{key :<10}: {value}\n")
+            print(f"{key :<17}: {value}")
+            f.write(f"{key :<17}: {value}\n")
 
 
 if __name__ == "__main__":

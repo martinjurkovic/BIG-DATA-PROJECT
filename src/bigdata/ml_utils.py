@@ -21,7 +21,9 @@ def save_confusion_matrix(y_test, y_pred, model_name):
         ]
     )
     ax.set_yticklabels(["Out of State", "NY"])
-    plt.savefig(f"figs/confusion_matrix_{model_name}.png")
+    fig.tight_layout()
+    plt.savefig(f"figs/confusion_matrix_{model_name}.png", dpi=300)
+    plt.close()
 
 
 def plot_results(y_test, y_pred, model_name, fmt="csv", title=""):
@@ -32,4 +34,6 @@ def plot_results(y_test, y_pred, model_name, fmt="csv", title=""):
     ax.set_xlabel("True")
     ax.set_ylabel("Predicted")
     ax.set_title(title)
-    plt.savefig(f"figs/results_{fmt}_{model_name}.png")
+    fig.tight_layout()
+    plt.savefig(f"figs/results_{fmt}_{model_name}.png", dpi=300)
+    plt.close()
