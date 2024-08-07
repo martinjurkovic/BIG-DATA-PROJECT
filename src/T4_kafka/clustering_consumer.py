@@ -116,12 +116,12 @@ def process_batch():
         # Scale the features
         scaled_features = scaler.fit_transform(features)
 
-        # Predict the cluster for each sample in the batch
-        cluster_labels = clusterer.predict(scaled_features) if fitted else [0] * len(scaled_features)
-
         # Train the model on the current batch
         clusterer.partial_fit(scaled_features)
         fitted = True
+
+        # Predict the cluster for each sample in the batch
+        cluster_labels = clusterer.predict(scaled_features) if fitted else [0] * len(scaled_features)
 
         # Store true labels and predicted labels for accuracy calculation
         true_labels.extend(y)
