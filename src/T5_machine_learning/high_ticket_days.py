@@ -1,5 +1,6 @@
 import os
 import time
+import argparse
 
 import numpy as np
 import pandas as pd
@@ -10,7 +11,22 @@ from sklearn.linear_model import SGDRegressor
 import xgboost as xgb
 from sklearn.metrics import mean_squared_error
 
-from bigdata.utils import read_csv_files, county_map
+from bigdata.ml_utils import plot_results
+from bigdata.utils import read_files, county_map, run_with_memory_log
+from bigdata.augmentation_utils import read_data
+
+# TODO: support all formats and add logging
+args = argparse.ArgumentParser(description="Convert CSV files to Parquet format.")
+args.add_argument(
+    "--format",
+    type=str,
+    help="Format of the data",
+    choices=["csv", "parquet", "hdf5"],
+    default="csv",
+)
+
+args = args.parse_args()
+fmt = args.format
 
 FILE_PATH = __file__
 ROOT_DIR = FILE_PATH.split("src")[0]
@@ -21,192 +37,261 @@ END_DATE = "2024-01-01"
 TEST_DATE = "2023-01-01"
 
 
-# Read the data
-start_time = time.time()
-columns = ["Issue Date", "Violation County"]
+def main():
+    processing_times = dict()
+    model_performance = dict()
 
-ddf = read_csv_files(
-    os.path.join(DATA_DIR, "CSV"), usecols=columns, years=list(range(2014, 2024))
-)
-df = ddf.compute()
-end_time = time.time()
-print(f"Time to read data: {end_time - start_time:.2f} seconds")
+    # Read the data
+    start_time = time.time()
+    columns = ["Issue Date", "Violation County"]
 
-
-# Data Augmentation
-start_time = time.time()
-
-
-def remap_county_codes(code):
-    if code != code:
-        return code
-    if code.upper() not in county_map.keys():
-        return float("nan")
-    return county_map[code.upper()]
-
-
-# Unify county codes
-df["Violation County"] = df["Violation County"].apply(remap_county_codes)
-# Drop rows with missing county codes
-df = df.loc[~df["Violation County"].isna()]
-
-
-def reindex(df, date_column, resample_freq="D"):
-    df[date_column] = pd.to_datetime(df[date_column])
-    df = df.set_index(date_column)
-    df = df.resample(resample_freq).mean()
-    return df
-
-
-def get_augmented_data_borough(borough):
-    # Open Business Data
-    busineses_df = pd.read_csv(
-        os.path.join(DATA_DIR, "CSV", f"{borough}_business_openings.csv")
+    ddf = read_files(
+        os.path.join(DATA_DIR, "CSV"),
+        file_format=fmt,
+        usecols=columns,
+        dtype={"Violation County": "str"},
+        years=list(range(2014, 2024)),
     )
-    busineses_df = reindex(busineses_df, "datetime")
+    ddf = ddf.sample(0.01)  # TODO: remove resampling
+    end_time = time.time()
+    print(f"Time to read data: {end_time - start_time:.2f} seconds")
+    processing_times["Read Data"] = end_time - start_time
 
-    # Events Data
-    events_df = pd.read_csv(os.path.join(DATA_DIR, "CSV", f"{borough}_events.csv"))
-    events_df = reindex(events_df, "datetime")
+    # Data Augmentation
+    start_time = time.time()
 
-    # Landmarks Data
-    landmarks_df = pd.read_csv(
-        os.path.join(DATA_DIR, "CSV", f"{borough}_landmarks.csv")
-    )
-    landmarks_df = reindex(landmarks_df, "datetime")
+    def remap_county_codes(code):
+        if str(code).upper() not in county_map.keys():
+            return float("nan")
+        return county_map[code.upper()]
 
-    # School open Data
-    schools_df = pd.read_csv(
-        os.path.join(DATA_DIR, "CSV", f"{borough}_school_openings.csv")
-    )
-    schools_df = reindex(schools_df, "datetime")
+    # Unify county codes
+    ddf["Violation County"] = ddf["Violation County"].apply(remap_county_codes)
+    # Drop rows with missing county codes
+    ddf = ddf.dropna(subset=["Violation County"])
 
-    # Weather Data
-    weather_df = pd.read_csv(os.path.join(DATA_DIR, "CSV", f"{borough}_weather.csv"))
-    weather_df = reindex(weather_df, "time")
-
-    return busineses_df, events_df, landmarks_df, schools_df, weather_df
-
-
-def get_augmented_data(borough=None):
-    holidays = weather_df = pd.read_csv(os.path.join(DATA_DIR, "CSV", "holidays.csv"))
-    holidays = reindex(holidays, "datetime")
-    if borough:
-        busineses_df, events_df, landmarks_df, schools_df, weather_df = (
-            get_augmented_data_borough(borough)
-        )
-        # combine all data
-        df = (
-            busineses_df.join(events_df, how="outer")
-            .join(landmarks_df, how="outer")
-            .join(schools_df, how="outer")
-            .join(weather_df, how="outer")
-            .join(holidays, how="outer")
-        )
+    def reindex(df, date_column, resample_freq="D"):
+        df[date_column] = dd.to_datetime(df[date_column])
+        df = df.set_index(date_column).compute()
+        df = df.resample(resample_freq).mean()
         return df
-    else:
-        dfs = dict()
-        for borough in ["Bronx", "Brooklyn", "Manhattan", "Queens", "Staten Island"]:
-            busineses, events, landmarks, schools, weather = get_augmented_data_borough(
-                borough
+
+    def get_augmented_data_borough(borough):
+        # Open Business Data
+        # busineses_df = pd.read_csv(
+        #     os.path.join(DATA_DIR, "CSV", f"{borough}_business_openings.{fmt}")
+        # )
+        busineses_df = read_data(
+            os.path.join(
+                DATA_DIR, fmt, "augmented", f"{borough}_business_openings.{fmt}"
+            ),
+            format=fmt,
+        )
+        busineses_df = reindex(busineses_df, "datetime")
+
+        # Events Data
+        # events_df = pd.read_csv(os.path.join(DATA_DIR, "CSV", f"{borough}_events.{fmt}"))
+        events_df = read_data(
+            os.path.join(DATA_DIR, fmt, "augmented", f"{borough}_events.{fmt}"),
+            format=fmt,
+        )
+        events_df = reindex(events_df, "datetime")
+
+        # Landmarks Data
+        # landmarks_df = pd.read_csv(
+        #     os.path.join(DATA_DIR, "CSV", f"{borough}_landmarks.{fmt}")
+        # )
+        landmarks_df = read_data(
+            os.path.join(DATA_DIR, fmt, "augmented", f"{borough}_landmarks.{fmt}"),
+            format=fmt,
+        )
+        landmarks_df = reindex(landmarks_df, "datetime")
+
+        # School open Data
+        # schools_df = pd.read_csv(
+        #     os.path.join(DATA_DIR, "CSV", f"{borough}_school_openings.{fmt}")
+        # )
+        schools_df = read_data(
+            os.path.join(
+                DATA_DIR, fmt, "augmented", f"{borough}_school_openings.{fmt}"
+            ),
+            format=fmt,
+        )
+        schools_df = reindex(schools_df, "datetime")
+
+        # Weather Data
+        # weather_df = pd.read_csv(os.path.join(DATA_DIR, "CSV", f"{borough}_weather.{fmt}"))
+        weather_df = read_data(
+            os.path.join(DATA_DIR, fmt, "augmented", f"{borough}_weather.{fmt}"),
+            format=fmt,
+        )
+        weather_df = reindex(weather_df, "time")
+
+        return busineses_df, events_df, landmarks_df, schools_df, weather_df
+
+    def get_augmented_data(borough=None):
+        holidays = read_data(
+            os.path.join(DATA_DIR, fmt, "augmented", f"holidays.{fmt}"),
+            format=fmt,
+        )
+        holidays = reindex(holidays, "datetime")
+        if borough:
+            busineses_df, events_df, landmarks_df, schools_df, weather_df = (
+                get_augmented_data_borough(borough)
             )
+            # combine all data
             df = (
-                busineses.join(events, how="outer")
-                .join(landmarks, how="outer")
-                .join(schools, how="outer")
-                .join(weather, how="outer")
+                busineses_df.join(events_df, how="outer")
+                .join(landmarks_df, how="outer")
+                .join(schools_df, how="outer")
+                .join(weather_df, how="outer")
                 .join(holidays, how="outer")
             )
-            dfs[borough] = df
-        return dfs
+            return df
+        else:
+            dfs = dict()
+            for borough in [
+                "Bronx",
+                "Brooklyn",
+                "Manhattan",
+                "Queens",
+                "Staten Island",
+            ]:
+                busineses, events, landmarks, schools, weather = (
+                    get_augmented_data_borough(borough)
+                )
+                df = (
+                    busineses.join(events, how="outer")
+                    .join(landmarks, how="outer")
+                    .join(schools, how="outer")
+                    .join(weather, how="outer")
+                    .join(holidays, how="outer")
+                )
+                dfs[borough] = df
+            return dfs
 
+    dfs = get_augmented_data()
 
-dfs = get_augmented_data()
+    ddf["tickets"] = 1
+    ddf = ddf.groupby(["Issue Date", "Violation County"]).sum()
+    ddf = ddf.reset_index()
 
-df["tickets"] = 1
-df = df.groupby(["Issue Date", "Violation County"]).sum()
-df.reset_index(inplace=True)
+    ddf["Issue Date"] = dd.to_datetime(ddf["Issue Date"], format="mixed")
+    ddf = ddf.loc[(ddf["Issue Date"] >= START_DATE) & (ddf["Issue Date"] < END_DATE)]
 
-df["Issue Date"] = pd.to_datetime(df["Issue Date"], format="mixed")
-df = df.loc[(df["Issue Date"] >= START_DATE) & (df["Issue Date"] < END_DATE)]
+    county_dfs = []
+    ddf = ddf.persist()
+    for county, aug_df in dfs.items():
+        mask = ddf["Violation County"] == county
+        merged = (
+            ddf.loc[mask]
+            .compute()
+            .merge(aug_df, left_on="Issue Date", right_index=True, how="left")
+        )
+        county_dfs.append(merged)
 
-county_dfs = []
-for county, aug_df in dfs.items():
-    mask = df["Violation County"] == county
-    merged = df.loc[mask].merge(
-        aug_df, left_on="Issue Date", right_index=True, how="left"
+    df = pd.concat(county_dfs)
+    df.set_index("Issue Date", inplace=True)
+    df.sort_index(inplace=True)
+
+    X = pd.get_dummies(df, columns=["Violation County"]).astype(float)
+    y = X.pop("tickets")
+
+    # drop constant columns
+    X = X.loc[:, X.apply(pd.Series.nunique) != 1]
+
+    X_train, X_test = X.iloc[X.index < TEST_DATE], X.iloc[X.index >= TEST_DATE]
+    y_train, y_test = y.iloc[X.index < TEST_DATE], y.iloc[X.index >= TEST_DATE]
+
+    end_time = time.time()
+    print(f"Time to augment data: {end_time - start_time:.2f} seconds")
+    processing_times["Data Augmentation"] = end_time - start_time
+
+    # XGBoost
+    start_time = time.time()
+
+    clf = xgb.XGBRegressor()
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+    rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+    plot_results(y_test, y_pred, "XGBoost", fmt=fmt, title=f"XGBoost RMSE: {rmse :.2f}")
+    print("XGBoost RMSE: ", rmse)
+    end_time = time.time()
+    print(f"Time to train XGBoost: {end_time - start_time:.2f} seconds")
+    processing_times["XGBoost"] = end_time - start_time
+    model_performance["XGBoost"] = rmse
+
+    # Dask Linear Regression
+    start_time = time.time()
+
+    # convert x_train to dask array
+    X_train = dd.from_pandas(X_train, npartitions=10)
+    y_train = dd.from_pandas(y_train, npartitions=10)
+    X_test = dd.from_pandas(X_test, npartitions=10)
+    y_test = dd.from_pandas(y_test, npartitions=10)
+
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
+
+    clf = LinearRegression()
+    clf.fit(X_train.to_dask_array(), y_train.to_dask_array())
+    y_pred = clf.predict(X_test.to_dask_array())
+    gt = y_test.compute()
+    pred = y_pred.compute()
+
+    rmse = np.sqrt(mean_squared_error(gt, pred))
+    plot_results(
+        gt, pred, "LinearRegression", fmt=fmt, title=f"Linear reg. RMSE: {rmse:.2f}"
     )
-    county_dfs.append(merged)
+    print("Lin re. RMSE: ", rmse)
+    end_time = time.time()
+    print(f"Time to train Linear Regression: {end_time - start_time:.2f} seconds")
+    processing_times["Linear Regression"] = end_time - start_time
+    model_performance["Linear Regression"] = rmse
 
-df = pd.concat(county_dfs)
-df.set_index("Issue Date", inplace=True)
-df.sort_index(inplace=True)
+    # SGDRegressor with partial_fit
+    start_time = time.time()
 
-X = pd.get_dummies(df, columns=["Violation County"]).astype(float)
-y = X.pop("tickets")
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
 
-# drop constant columns
-X = X.loc[:, X.apply(pd.Series.nunique) != 1]
+    clf = SGDRegressor()
+    for partition in range(10):
+        clf.partial_fit(
+            X_train.get_partition(partition).compute(),
+            y_train.get_partition(partition).compute(),
+        )
 
-X_train, X_test = X.iloc[X.index < TEST_DATE], X.iloc[X.index >= TEST_DATE]
-y_train, y_test = y.iloc[X.index < TEST_DATE], y.iloc[X.index >= TEST_DATE]
+    y_pred = clf.predict(X_test.compute())
+    gt = y_test.compute()
 
-end_time = time.time()
-print(f"Time to augment data: {end_time - start_time:.2f} seconds")
+    rmse = np.sqrt(mean_squared_error(gt, y_pred))
+    plot_results(gt, y_pred, "SGD", fmt=fmt, title=f"Batch SGD RMSE: {rmse:.2f}")
+    print("SGD RMSE: ", rmse)
+    end_time = time.time()
+    print(f"Time to train SGD: {end_time - start_time:.2f} seconds")
+    processing_times["SGD"] = end_time - start_time
+    model_performance["SGD"] = rmse
 
-# XGBoost
-start_time = time.time()
+    # Save processing times
+    times_log_path = os.path.join("logs", f"T3_{fmt}_times.txt")
+    with open(times_log_path, "w") as f:
+        for key, value in processing_times.items():
+            print(f"{key :<17}: {value} seconds")
+            f.write(f"{key :<17}: {value} seconds\n")
 
-clf = xgb.XGBRegressor()
-clf.fit(X_train, y_train)
-rmse = np.sqrt(mean_squared_error(y_test, clf.predict(X_test)))
-print("XGBoost RMSE: ", rmse)
-end_time = time.time()
-print(f"Time to train XGBoost: {end_time - start_time:.2f} seconds")
-
-# Dask Linear Regression
-start_time = time.time()
-
-# convert x_train to dask array
-X_train = dd.from_pandas(X_train, npartitions=10)
-y_train = dd.from_pandas(y_train, npartitions=10)
-X_test = dd.from_pandas(X_test, npartitions=10)
-y_test = dd.from_pandas(y_test, npartitions=10)
-
-scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
+    # Save model performance
+    performance_log_path = os.path.join("logs", f"T3_{fmt}_performance.txt")
+    with open(performance_log_path, "w") as f:
+        for key, value in model_performance.items():
+            print(f"{key :<10}: {value}")
+            f.write(f"{key :<10}: {value}\n")
 
 
-clf = LinearRegression()
-clf.fit(X_train.to_dask_array(), y_train.to_dask_array())
-y_pred = clf.predict(X_test.to_dask_array())
-gt = y_test.compute()
-pred = y_pred.compute()
-
-rmse = np.sqrt(mean_squared_error(gt, pred))
-print("Lin re. RMSE: ", rmse)
-end_time = time.time()
-print(f"Time to train Linear Regression: {end_time - start_time:.2f} seconds")
-
-# SGDRegressor with partial_fit
-start_time = time.time()
-
-scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
-
-clf = SGDRegressor()
-for partition in range(10):
-    clf.partial_fit(
-        X_train.get_partition(partition).compute(),
-        y_train.get_partition(partition).compute(),
+if __name__ == "__main__":
+    run_with_memory_log(
+        main,
+        os.path.join("logs", f"T3_{fmt}_memory_log.txt"),
     )
-
-y_pred = clf.predict(X_test.compute())
-gt = y_test.compute()
-
-rmse = np.sqrt(mean_squared_error(gt, y_pred))
-print("SGD RMSE: ", rmse)
-end_time = time.time()
-print(f"Time to train SGD: {end_time - start_time:.2f} seconds")

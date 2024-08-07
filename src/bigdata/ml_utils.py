@@ -22,3 +22,14 @@ def save_confusion_matrix(y_test, y_pred, model_name):
     )
     ax.set_yticklabels(["Out of State", "NY"])
     plt.savefig(f"figs/confusion_matrix_{model_name}.png")
+
+
+def plot_results(y_test, y_pred, model_name, fmt="csv", title=""):
+    fig, ax = plt.subplots()
+    ax.scatter(y_test, y_pred)
+    max_val = max(y_test.max(), y_pred.max())
+    ax.plot([0, max_val], [0, max_val], color="red", linestyle="--")
+    ax.set_xlabel("True")
+    ax.set_ylabel("Predicted")
+    ax.set_title(title)
+    plt.savefig(f"figs/results_{fmt}_{model_name}.png")
