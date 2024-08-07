@@ -15,7 +15,6 @@ from bigdata.ml_utils import plot_results
 from bigdata.utils import read_files, county_map, run_with_memory_log
 from bigdata.augmentation_utils import read_data
 
-# TODO: support all formats and add logging
 args = argparse.ArgumentParser(description="High Ticket Days Prediction")
 args.add_argument(
     "--format",
@@ -259,14 +258,14 @@ def main():
     model_performance["SGD"] = rmse
 
     # Save processing times
-    times_log_path = os.path.join("logs", f"T3_{fmt}_times.txt")
+    times_log_path = os.path.join("logs", f"T5b_{fmt}_times.txt")
     with open(times_log_path, "w") as f:
         for key, value in processing_times.items():
             print(f"{key :<17}: {value} seconds")
             f.write(f"{key :<17}: {value} seconds\n")
 
     # Save model performance
-    performance_log_path = os.path.join("logs", f"T3_{fmt}_performance.txt")
+    performance_log_path = os.path.join("logs", f"T5b_{fmt}_performance.txt")
     with open(performance_log_path, "w") as f:
         for key, value in model_performance.items():
             print(f"{key :<17}: {value}")
@@ -276,5 +275,5 @@ def main():
 if __name__ == "__main__":
     run_with_memory_log(
         main,
-        os.path.join("logs", f"T3_{fmt}_memory_log.txt"),
+        os.path.join("logs", f"T5b_{fmt}_memory_log.txt"),
     )
