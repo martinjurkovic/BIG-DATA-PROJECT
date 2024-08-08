@@ -26,8 +26,7 @@ def read_data(path, format, dtype=None, **kwargs):
             **kwargs,
         )
     elif format == "hdf5":
-        data = read_hdf5(path)
-        return dd.from_array(data, columns=data.dtype.names)
+        return read_hdf5(path)
     elif format == "duckdb":
         conn, table_name = get_duckdb_connection(path.replace(" ", "_"))
         df = conn.execute(f"SELECT * FROM {table_name}").fetchdf()

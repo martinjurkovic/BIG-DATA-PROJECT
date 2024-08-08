@@ -2,6 +2,7 @@ import unicodedata
 
 import numpy as np
 import h5py
+import dask.dataframe as dd
 
 
 def clean_string(s):
@@ -38,4 +39,11 @@ def save_to_hdf5(path, df):
 def read_hdf5(path):
     with h5py.File(path, "r") as f:
         data = f["table"][()]
-    return data
+    ddf = dd.from_array(data, columns=data.dtype.names)
+    # decode bytes to string
+    for dtype_desc in data.dtype.descr:
+        col, dtype = dtype_desc
+        if dtype[0] == "|S20":
+            ddf[col] = ddf[col].astype(str)
+
+    return ddf
