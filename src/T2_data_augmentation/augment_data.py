@@ -704,7 +704,7 @@ def main():
         return hourly_df
 
     print("Processing events")
-    for borough in event_data["Event Borough"].unique():
+    for borough in boroughs["BoroName"]:
         print(f"{borough}")
         hourly_df = get_events_hourly_df(event_data, borough)
         save_data(
@@ -741,7 +741,7 @@ def main():
     landmark_data.Borough = landmark_data.Borough.map(boroughs_map)
 
     print("Processing landmarks")
-    for borough in landmark_data["Borough"].unique():
+    for borough in boroughs["BoroName"]:
         print(f"{borough}")
         hourly_dates = pd.date_range(
             start="2013-01-01", end="2024-12-31 23:00:00", freq="h"
@@ -786,7 +786,7 @@ def main():
 
     times_log_path = os.path.join(
         "logs",
-        f"T2_{fmt}__n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_times.txt",
+        f"T2_{fmt}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_times.txt",
     )
     with open(times_log_path, "w") as f:
         times = []
