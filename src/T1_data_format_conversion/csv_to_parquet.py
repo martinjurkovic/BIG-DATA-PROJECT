@@ -8,8 +8,7 @@ import pyarrow.parquet as pq
 from bigdata.utils import run_with_memory_log
 
 
-FILE_PATH = Path(__file__).resolve()
-FILE_DIR_PATH = FILE_PATH.parent
+LOG_PATH = Path("logs").resolve()
 
 parser = argparse.ArgumentParser(description="Convert CSV files to Parquet format.")
 parser.add_argument(
@@ -101,7 +100,7 @@ def main():
 
 
     # save the time taken to convert each file to a HDF5 file
-    with open(FILE_DIR_PATH / "csv_to_parquet_times.txt", "w") as f:
+    with open(LOG_PATH / "csv_to_parquet_times.txt", "w") as f:
         for file, time_taken in time_dict.items():
             f.write(f"{file}: {time_taken:.2f} seconds\n")
         mean_time = sum(time_dict.values()) / len(time_dict)
@@ -112,4 +111,4 @@ def main():
         f.write(f"Standard Deviation: {std_time:.2f} seconds\n")
 
 if __name__ == "__main__":
-    run_with_memory_log(main, FILE_DIR_PATH / "T1_csv_to_parquet_memory_log.txt")
+    run_with_memory_log(main, LOG_PATH / "T1_csv_to_parquet_memory_log.txt")

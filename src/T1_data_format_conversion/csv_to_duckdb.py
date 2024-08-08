@@ -4,8 +4,7 @@ import duckdb
 import time
 from bigdata.utils import run_with_memory_log
 
-FILE_PATH = Path(__file__).resolve()
-FILE_DIR_PATH = FILE_PATH.parent
+LOG_PATH = Path("logs").resolve()
 
 parser = argparse.ArgumentParser(description="Convert CSV files to Parquet format.")
 parser.add_argument(
@@ -37,8 +36,8 @@ def main():
     conn.execute(f"CREATE TABLE nyc_data AS SELECT * FROM parquet_scan('{PARQUET_PATH / '*.parquet'}', union_by_name = true)")
     end_time = time.time()
 
-    with open(FILE_DIR_PATH / "csv_to_duckdb_times.txt", "w") as f:
+    with open(LOG_PATH / "csv_to_duckdb_times.txt", "w") as f:
         f.write(f"Time to convert CSV files to DuckDB: {end_time - start_time:.2f} seconds\n, or per file: {(end_time - start_time) / len(list(PARQUET_PATH.glob('*.parquet'))):.2f} seconds\n")
 
 if __name__ == "__main__":
-    run_with_memory_log(main, FILE_DIR_PATH / "T1_csv_to_duckdb_memory_log.txt")
+    run_with_memory_log(main, LOG_PATH / "T1_csv_to_duckdb_memory_log.txt")
