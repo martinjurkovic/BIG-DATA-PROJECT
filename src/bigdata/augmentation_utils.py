@@ -2,7 +2,7 @@ import dask.dataframe as dd
 import duckdb
 from pathlib import Path
 
-from .hdf5 import save_to_hdf5
+from .hdf5 import save_to_hdf5, read_hdf5
 
 
 def get_duckdb_connection(path):
@@ -26,7 +26,8 @@ def read_data(path, format, dtype=None, **kwargs):
             **kwargs,
         )
     elif format == "hdf5":
-        return dd.read_hdf(path, key="data")
+        data = read_hdf5(path)
+        return dd.from_array(data, columns=data.dtype.names)
     elif format == "duckdb":
         conn, table_name = get_duckdb_connection(path.replace(" ", "_"))
         df = conn.execute(f"SELECT * FROM {table_name}").fetchdf()
@@ -42,7 +43,6 @@ def save_data(path, df, format):
         df.to_parquet(path, engine="pyarrow")
     elif format == "hdf5":
         save_to_hdf5(path, df)
-        # df.to_hdf(path, key="data")
     elif format == "duckdb":
         conn, table_name = get_duckdb_connection(path.replace(" ", "_"))
         conn.execute(f"CREATE TABLE {table_name} AS SELECT * FROM df")

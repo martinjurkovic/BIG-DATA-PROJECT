@@ -33,3 +33,9 @@ def save_to_hdf5(path, df):
     with h5py.File(path, "w") as hdf5_file:
         # Create a dataset for the table
         hdf5_file.create_dataset("table", data=structured_array)
+
+
+def read_hdf5(path):
+    with h5py.File(path, "r") as f:
+        data = f["table"][()]
+    return data
