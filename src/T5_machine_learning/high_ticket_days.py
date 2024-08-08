@@ -74,7 +74,7 @@ def main():
     ddf["Issue Date"] = dd.to_datetime(ddf["Issue Date"], format="mixed")
     ddf = ddf.loc[(ddf["Issue Date"] >= START_DATE) & (ddf["Issue Date"] < END_DATE)]
     # Unify county codes
-    ddf["Violation County"] = ddf["Violation County"].map(remap_county_codes)
+    ddf["Violation County"] = ddf["Violation County"].map(remap_county_codes, meta=str)
     # Drop rows with missing county codes
     ddf = ddf.loc[ddf["Violation County"] != "-"]
 
@@ -214,18 +214,18 @@ def main():
     start_time = time.time()
 
     # convert x_train to dask array
-    X_train = dd.from_pandas(X_train, npartitions=10)
-    y_train = dd.from_pandas(y_train, npartitions=10)
-    X_test = dd.from_pandas(X_test, npartitions=10)
-    y_test = dd.from_pandas(y_test, npartitions=10)
+    X_train = dd.from_pandas(X_train).to_dask_array()
+    y_train = dd.from_pandas(y_train).to_dask_array()
+    X_test = dd.from_pandas(X_test).to_dask_array()
+    y_test = dd.from_pandas(y_test)
 
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
 
     clf = LinearRegression()
-    clf.fit(X_train.to_dask_array(), y_train.to_dask_array())
-    y_pred = clf.predict(X_test.to_dask_array())
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
     gt = y_test.compute()
     pred = y_pred.compute()
 
@@ -247,11 +247,8 @@ def main():
     X_test = scaler.transform(X_test)
 
     clf = SGDRegressor()
-    for partition in range(10):
-        clf.partial_fit(
-            X_train.get_partition(partition).compute(),
-            y_train.get_partition(partition).compute(),
-        )
+    for i in range(X_train.blocks.shape[0]):
+        clf.partial_fit(X_train.blocks[i].compute(), y_train.blocks[i].compute())
 
     y_pred = clf.predict(X_test.compute())
     gt = y_test.compute()
