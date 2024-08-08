@@ -27,10 +27,9 @@ school_data.to_parquet(
     os.path.join(DATA_DIR, "parquet", "raw", "school_locations.parquet")
 )
 
-school_data.to_hdf(
+save_data(
     os.path.join(DATA_DIR, "hdf5", "raw", "school_locations.hdf5"),
-    key="data",
-    format="table",
+    format="hdf5",
 )
 
 save_data(
@@ -60,10 +59,9 @@ business_data = business_data.compute()
 business_data.to_parquet(
     os.path.join(DATA_DIR, "parquet", "raw", "business_locations.parquet")
 )
-business_data.to_hdf(
+save_data(
     os.path.join(DATA_DIR, "hdf5", "raw", "business_locations.hdf5"),
-    key="data",
-    format="table",
+    format="hdf5",
 )
 save_data(
     os.path.join(DATA_DIR, "duckdb", "raw", "business_locations.duckdb"),
@@ -81,9 +79,7 @@ event_data = read_data(
 
 event_data = event_data.compute()
 event_data.to_parquet(os.path.join(DATA_DIR, "parquet", "raw", "events.parquet"))
-event_data.to_hdf(
-    os.path.join(DATA_DIR, "hdf5", "raw", "events.hdf5"), key="data", format="table"
-)
+save_data(os.path.join(DATA_DIR, "hdf5", "raw", "events.hdf5"), format="hdf5")
 save_data(
     os.path.join(DATA_DIR, "duckdb", "raw", "events.duckdb"),
     event_data,
@@ -101,9 +97,7 @@ landmark_data = read_data(
 
 landmark_data = landmark_data.compute()
 landmark_data.to_parquet(os.path.join(DATA_DIR, "parquet", "raw", "landmarks.parquet"))
-landmark_data.to_hdf(
-    os.path.join(DATA_DIR, "hdf5", "raw", "landmarks.hdf5"), key="data", format="table"
-)
+save_data(os.path.join(DATA_DIR, "hdf5", "raw", "landmarks.hdf5"), format="hdf5")
 save_data(
     os.path.join(DATA_DIR, "duckdb", "raw", "landmarks.duckdb"),
     landmark_data,
@@ -122,11 +116,10 @@ for borough in ["Bronx", "Brooklyn", "Manhattan", "Queens", "Staten Island"]:
     weather_data.to_parquet(
         os.path.join(DATA_DIR, "parquet", "raw", f"{borough}_weather.parquet")
     )
-    weather_data.to_hdf(
-        os.path.join(DATA_DIR, "hdf5", "raw", f"{borough}_weather.hdf5"),
-        key="data",
-        format="table",
+    save_data(
+        os.path.join(DATA_DIR, "hdf5", "raw", f"{borough}_weather.hdf5"), format="hdf5"
     )
+
     save_data(
         os.path.join(DATA_DIR, "duckdb", "raw", f"{borough}_weather.duckdb"),
         weather_data,
