@@ -7,6 +7,8 @@ import time
 import statistics
 import threading
 
+from .hdf5 import read_hdf5
+
 
 def read_csv_files(base_path="../../data/csv", usecols=None, dtype=None, years=None):
     file_paths = []
@@ -114,8 +116,12 @@ def read_hdf5_files(base_path="../../data/hdf5", usecols=None, years=None):
         if not filtered_files:
             raise ValueError("No files found for the specified years.")
         file_paths = [os.path.join(base_path, file) for file in filtered_files]
-    ddf = dd.read_hdf(file_paths, key="data", columns=usecols)
-    return ddf
+
+    ddfs = []
+    for file_path in file_paths:
+        ddf = read_hdf5(file_path, columns=usecols)
+        ddfs.append(ddf)
+    return dd.concat(ddfs)
 
 
 def read_files(base_path, file_format, usecols=None, dtype=None, years=None):
@@ -131,14 +137,16 @@ def read_files(base_path, file_format, usecols=None, dtype=None, years=None):
         "Invalid file format. Please use one of ['csv', 'parquet', 'duckdb', 'hdf5']."
     )
 
+
 # Function to log memory usage
 def log_memory_usage(memory_log):
     process = psutil.Process(os.getpid())
     while True:
         memory_info = process.memory_info()
-        rss = memory_info.rss / 1024 ** 2  # Convert bytes to MB
+        rss = memory_info.rss / 1024**2  # Convert bytes to MB
         memory_log.append(rss)
         time.sleep(1)  # Log every second
+
 
 def save_memory_log(memory_log, file_path):
     # Calculate statistics
@@ -148,28 +156,31 @@ def save_memory_log(memory_log, file_path):
         std_memory = statistics.stdev(memory_log) if len(memory_log) > 1 else 0.0
     else:
         max_memory = mean_memory = std_memory = 0.0
-    
+
     # Save results to a file
     with open(file_path, "w") as f:
         f.write(f"Max RAM usage: {max_memory:.2f} MB\n")
         f.write(f"Mean RAM usage: {mean_memory:.2f} MB\n")
         f.write(f"Standard deviation of RAM usage: {std_memory:.2f} MB\n")
-    
+
     print(f"Max RAM usage: {max_memory:.2f} MB")
     print(f"Mean RAM usage: {mean_memory:.2f} MB")
     print(f"Standard deviation of RAM usage: {std_memory:.2f} MB")
 
+
 def run_with_memory_log(func, file_path):
     memory_log = []
     log_thread = threading.Thread(target=log_memory_usage, args=(memory_log,))
-    log_thread.daemon = True  # This ensures the logging thread will exit when the main program exits
+    log_thread.daemon = (
+        True  # This ensures the logging thread will exit when the main program exits
+    )
     log_thread.start()
 
     func()
 
     # Allow the logging thread to capture memory usage after the function execution
     time.sleep(1)
-    
+
     # Stop logging thread
     log_thread.join(timeout=0.1)
 

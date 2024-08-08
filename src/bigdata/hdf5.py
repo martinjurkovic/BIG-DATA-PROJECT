@@ -42,13 +42,17 @@ def save_to_hdf5(path, df, dtypes=None):
         hdf5_file.create_dataset("table", data=structured_array)
 
 
-def read_hdf5(path):
+def read_hdf5(path, columns=None):
     with h5py.File(path, "r") as f:
         data = f["table"][()]
-    ddf = dd.from_array(data, columns=data.dtype.names)
+    if columns is None:
+        columns = data.dtype.names
+    ddf = dd.from_array(data, columns=columns)
     # decode bytes to string
     for dtype_desc in data.dtype.descr:
         col, dtype = dtype_desc
+        if col not in ddf.columns:
+            continue
         if ddf[col].dtype == np.dtype("O") or dtype[0] == "|S20":
             ddf[col] = ddf[col].astype(str)
 
