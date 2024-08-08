@@ -29,6 +29,7 @@ school_data.to_parquet(
 
 save_data(
     os.path.join(DATA_DIR, "hdf5", "raw", "school_locations.hdf5"),
+    school_data,
     format="hdf5",
 )
 
@@ -61,6 +62,7 @@ business_data.to_parquet(
 )
 save_data(
     os.path.join(DATA_DIR, "hdf5", "raw", "business_locations.hdf5"),
+    business_data,
     format="hdf5",
 )
 save_data(
@@ -79,7 +81,9 @@ event_data = read_data(
 
 event_data = event_data.compute()
 event_data.to_parquet(os.path.join(DATA_DIR, "parquet", "raw", "events.parquet"))
-save_data(os.path.join(DATA_DIR, "hdf5", "raw", "events.hdf5"), format="hdf5")
+save_data(
+    os.path.join(DATA_DIR, "hdf5", "raw", "events.hdf5"), event_data, format="hdf5"
+)
 save_data(
     os.path.join(DATA_DIR, "duckdb", "raw", "events.duckdb"),
     event_data,
@@ -97,7 +101,11 @@ landmark_data = read_data(
 
 landmark_data = landmark_data.compute()
 landmark_data.to_parquet(os.path.join(DATA_DIR, "parquet", "raw", "landmarks.parquet"))
-save_data(os.path.join(DATA_DIR, "hdf5", "raw", "landmarks.hdf5"), format="hdf5")
+save_data(
+    os.path.join(DATA_DIR, "hdf5", "raw", "landmarks.hdf5"),
+    landmark_data,
+    format="hdf5",
+)
 save_data(
     os.path.join(DATA_DIR, "duckdb", "raw", "landmarks.duckdb"),
     landmark_data,
@@ -117,7 +125,9 @@ for borough in ["Bronx", "Brooklyn", "Manhattan", "Queens", "Staten Island"]:
         os.path.join(DATA_DIR, "parquet", "raw", f"{borough}_weather.parquet")
     )
     save_data(
-        os.path.join(DATA_DIR, "hdf5", "raw", f"{borough}_weather.hdf5"), format="hdf5"
+        os.path.join(DATA_DIR, "hdf5", "raw", f"{borough}_weather.hdf5"),
+        weather_data,
+        format="hdf5",
     )
 
     save_data(
