@@ -35,13 +35,13 @@ def read_data(path, format, dtype=None, **kwargs):
         raise ValueError(f"Unsupported format: {format}")
 
 
-def save_data(path, df, format):
+def save_data(path, df, format, **kwargs):
     if format == "csv":
         df.to_csv(path, index=False)
     elif format == "parquet":
         df.to_parquet(path, engine="pyarrow")
     elif format == "hdf5":
-        save_to_hdf5(path, df)
+        save_to_hdf5(path, df, **kwargs)
     elif format == "duckdb":
         conn, table_name = get_duckdb_connection(path.replace(" ", "_"))
         conn.execute(f"CREATE TABLE {table_name} AS SELECT * FROM df")

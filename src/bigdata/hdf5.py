@@ -21,8 +21,14 @@ def process_type(type):
     raise ValueError(f"Unknown type {type}")
 
 
-def save_to_hdf5(path, df):
+def save_to_hdf5(path, df, dtypes=None):
     data_types = [(name, process_type(type)) for name, type in df.dtypes.items()]
+    if dtypes is not None:
+        for name, dtype in dtypes.items():
+            for i, (name2, dtype2) in enumerate(data_types):
+                if name == name2:
+                    data_types[i] = (name, dtype)
+
     for col, dtype in data_types:
         if dtype == "S20":
             df[col] = df[col].apply(clean_string)
@@ -43,7 +49,7 @@ def read_hdf5(path):
     # decode bytes to string
     for dtype_desc in data.dtype.descr:
         col, dtype = dtype_desc
-        if dtype[0] == "|S20":
+        if ddf[col].dtype == np.dtype("O") or dtype[0] == "|S20":
             ddf[col] = ddf[col].astype(str)
 
     return ddf

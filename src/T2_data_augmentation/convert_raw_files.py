@@ -63,6 +63,7 @@ business_data.to_parquet(
 save_data(
     os.path.join(DATA_DIR, "hdf5", "raw", "business_locations.hdf5"),
     business_data,
+    dtypes={"Location": "S42"},
     format="hdf5",
 )
 save_data(
