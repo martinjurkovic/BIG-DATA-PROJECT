@@ -35,9 +35,6 @@ fmt = args.format
 memory_limit = args.memory_limit
 n_workers = args.n_workers
 
-args = args.parse_args()
-fmt = args.format
-
 CHUNKSIZE = 10_000
 FILE_PATH = __file__
 ROOT_DIR = FILE_PATH.split("src")[0]
