@@ -1,11 +1,9 @@
 # PROJECT
 /logs
-data/CSV/*
-!data/CSV/nyt.sh
+/data
 data/parquet/*
-data/HDF5/*
-data/duckdb/*
-data/CSV_new/*
+*.sh
+
 **/figs/*
 dask_duckdb
 
