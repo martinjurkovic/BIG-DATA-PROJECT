@@ -169,6 +169,7 @@ def main():
     dfs = get_augmented_data()
 
     ddf["tickets"] = 1
+    ddf = ddf.persist()
     df = ddf.groupby(["Issue Date", "Violation County"]).sum().compute().reset_index()
 
     county_dfs = []
