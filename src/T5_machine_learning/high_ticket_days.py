@@ -49,13 +49,11 @@ def main():
 
     # Read the data
     start_time = time.time()
-    columns = ["Issue Date", "Violation County"]
-
     ddf = read_files(
         os.path.join(DATA_DIR, fmt),
         file_format=fmt,
-        usecols=columns,
-        dtype={"Violation County": "str"},
+        usecols=["Issue Date", "Violation County"],
+        dtype={"Violation County": "str", "Issue Date": "str"},
         years=list(range(2014, 2024)),
     )
     end_time = time.time()
@@ -166,11 +164,11 @@ def main():
                 dfs[borough] = df
             return dfs
 
-    dfs = get_augmented_data()
-
     ddf["tickets"] = 1
-    ddf = ddf.persist()
-    df = ddf.groupby(["Issue Date", "Violation County"]).sum().compute().reset_index()
+    ddf = ddf.groupby(["Issue Date", "Violation County"]).sum()
+    df = ddf.compute().reset_index()
+
+    dfs = get_augmented_data()
 
     county_dfs = []
     for county, aug_df in dfs.items():
