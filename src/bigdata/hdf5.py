@@ -53,7 +53,7 @@ def read_hdf5(path, columns=None):
         col, dtype = dtype_desc
         if col not in ddf.columns:
             continue
-        if ddf[col].dtype == np.dtype("O") or dtype[0] == "|S20":
+        if str(dtype[0]).startswith("|"):
             ddf[col] = ddf[col].astype(str)
 
     return ddf
