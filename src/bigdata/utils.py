@@ -121,7 +121,7 @@ def read_files(base_path, file_format, usecols=None, dtype=None, years=None):
     elif file_format == "parquet":
         return read_parquet_files(base_path, usecols, years)
     elif file_format == "duckdb":
-        return read_duckdb_files(base_path, usecols, years)
+        return read_duckdb_files(base_path, usecols)
     elif file_format == "hdf5":
         return read_hdf5_files(base_path, usecols, years)
     raise ValueError(
