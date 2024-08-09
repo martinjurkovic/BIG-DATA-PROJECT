@@ -80,7 +80,7 @@ def main():
             ],
             years=years,
         )
-        .sample(0.1)
+        .sample(frac=0.1)
         .persist()
     )
 
@@ -229,13 +229,10 @@ def main():
     # %%
     # Heatmap of Violation Counts by Location and Precinct
     start_time = time.time()
-    # df = ddf[["Violation Precinct", "Violation Location"]].compute()
-    df = (
-        ddf.groupby(["Violation Precinct", "Violation Location"])
-        .size()
-        .compute()
-        .unstack(fill_value=0)
-    )
+    df = ddf[["Violation Precinct", "Violation Location"]].compute()
+    df["Precinct"] = df["Violation Precinct"].values[:, 0]
+    df.drop(columns=["Violation Precinct"], inplace=True)
+    df = ddf.groupby(["Precinct", "Violation Location"]).size().unstack(fill_value=0)
     plt.figure(figsize=(12, 8))
     sns.heatmap(df, cmap="coolwarm")
     plt.title("Heatmap of Violation Counts by Location and Precinct")
