@@ -58,7 +58,7 @@ def read_parquet_files(base_path="../../data/parquet", usecols=None, years=None)
     return ddf
 
 
-def read_duckdb_files(base_path, usecols=None, years=None):
+def read_duckdb_files(base_path, usecols=None, **kwargs):
     """
     Reads data from DuckDB and filters based on specified columns and years using only SQL.
 
@@ -81,15 +81,6 @@ def read_duckdb_files(base_path, usecols=None, years=None):
 
     # Construct the base SQL query
     query = f"SELECT {columns_str} FROM nyc_data"
-
-    if years:
-        # Create a string of years for SQL IN clause
-        years_str = ", ".join(map(str, years))
-
-        # Split 'Issue Date' on '/' and extract the year
-        query += f"""
-            WHERE SPLIT_PART("Issue Date", '/', 3)::INTEGER IN ({years_str})
-        """
 
     # Execute the query and return the result as a DataFrame
     df = conn.execute(query).df()
