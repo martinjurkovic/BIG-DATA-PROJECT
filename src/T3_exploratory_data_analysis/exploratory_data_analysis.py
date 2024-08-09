@@ -178,7 +178,7 @@ def main():
     df["Precinct"] = df["Violation Precinct"].values[:, 0]
     df_precinct = df["Precinct"].value_counts().head(10)
     plt.figure(figsize=(12, 6))
-    sns.countplot(data=df, x="Violation Precinct", order=df_precinct.index)
+    sns.countplot(data=df, x="Precinct", order=df_precinct.index)
     plt.title("Violations by Precinct")
     plt.xticks(rotation=90)
     plt.savefig(fig_dir / f"(violations_by_precinct_dask)_{file_format}.png")
