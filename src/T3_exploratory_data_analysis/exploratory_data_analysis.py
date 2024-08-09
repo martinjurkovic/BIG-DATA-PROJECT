@@ -13,6 +13,7 @@ from dask.distributed import LocalCluster, Client
 
 FILE_PATH = Path(__file__).resolve()
 FILE_DIR_PATH = FILE_PATH.parent
+LOG_PATH = Path("logs").resolve()
 
 # Set up the directory for saving figures
 fig_dir = FILE_DIR_PATH / "figs"
@@ -50,7 +51,7 @@ def main():
     plot_times = []
 
     # Function to save times to a .txt file
-    def save_times_to_file(times, filename=f"{file_format}_plot_times.txt"):
+    def save_times_to_file(times, filename=f"logs/T3_{file_format}_plot_times.txt"):
         with open(filename, "w") as f:
             for i, t in enumerate(times):
                 f.write(f"Plot {i+1}: {t:.2f} seconds\n")
@@ -284,6 +285,5 @@ if __name__ == "__main__":
     client = Client(cluster)
     run_with_memory_log(
         main,
-        FILE_DIR_PATH
-        / f"eda_{file_format}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_memory_log.txt",
+        LOG_PATH / f"T3_{file_format}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_memory_log.txt",
     )
