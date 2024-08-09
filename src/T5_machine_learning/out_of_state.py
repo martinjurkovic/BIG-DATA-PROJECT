@@ -70,19 +70,19 @@ def main():
     ]
 
     dtype = {
-        "Registration State": "object",
-        "Plate Type": "object",
-        "Issue Date": "object",
-        "Violation Code": "object",
-        "Vehicle Body Type": "object",
-        "Vehicle Make": "object",
-        "Issuing Agency": "object",
-        "Violation Time": "object",
-        "Violation County": "object",
-        "Violation Legal Code": "object",
-        "From Hours In Effect": "object",
-        "To Hours In Effect": "object",
-        "Unregistered Vehicle?": "object",
+        "Registration State": "str",
+        "Plate Type": "str",
+        "Issue Date": "str",
+        "Violation Code": "str",
+        "Vehicle Body Type": "str",
+        "Vehicle Make": "str",
+        "Issuing Agency": "str",
+        "Violation Time": "str",
+        "Violation County": "str",
+        "Violation Legal Code": "str",
+        "From Hours In Effect": "str",
+        "To Hours In Effect": "str",
+        "Unregistered Vehicle?": "str",
         "Vehicle Year": "float32",
         "Feet From Curb": "float32",
     }
@@ -218,8 +218,6 @@ def main():
     )
 
     def get_parking_hour(x: str):
-        if x != x:
-            return x
         if x == "ALL":
             return 24
         return get_hour(x)
