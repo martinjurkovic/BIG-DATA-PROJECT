@@ -78,6 +78,27 @@ columns = [
     "Double Parking Violation",
 ]
 
+dtype = {
+    "Violation Description": "object",
+    "Violation Legal Code": "object",
+    "Violation Post Code": "object",
+    "Intersecting Street": "object",
+    "Issuer Squad": "str",
+    "Issuer Command": "str",
+    "Violation In Front Of Or Opposite": "str",
+    "Time First Observed": "object",
+    "Vehicle Expiration Date": "object",
+    "House Number": "object",
+    "No Standing or Stopping Violation": "str",
+    "Hydrant Violation": "str",
+    "Double Parking Violation": "str",
+    "Meter Number": "str",
+    "Days Parking In Effect": "str",
+    "From Hours In Effect": "str",
+    "To Hours In Effect": "str",
+}
+
+
 def main():
     time_dict = {}
 
@@ -92,12 +113,11 @@ def main():
             print(f"Converting {file} to parquet.")
             # read the csv file
             start_time = time.time()
-            df = pd.read_csv(CSV_PATH / file, low_memory=False, names=columns, header=0)
+            df = pd.read_csv(CSV_PATH / file, names=columns, dtype=dtype, header=0)
             table = pa.Table.from_pandas(df)
             pq.write_table(table, parquet_file_path)
             end_time = time.time()
             time_dict[file] = end_time - start_time
-
 
     # save the time taken to convert each file to a HDF5 file
     with open(LOG_PATH / "csv_to_parquet_times.txt", "w") as f:
@@ -109,6 +129,7 @@ def main():
         ) ** 0.5
         f.write(f"\nMean Time: {mean_time:.2f} seconds\n")
         f.write(f"Standard Deviation: {std_time:.2f} seconds\n")
+
 
 if __name__ == "__main__":
     run_with_memory_log(main, LOG_PATH / "T1_csv_to_parquet_memory_log.txt")
