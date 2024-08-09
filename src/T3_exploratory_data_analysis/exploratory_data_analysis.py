@@ -245,7 +245,7 @@ def main():
     # %%
     # Box Plot of Feet From Curb
     start_time = time.time()
-    df = ddf[["Feet From Curb"]].compute()
+    df = ddf[["Feet From Curb"]].compute().reset_index(drop=True)
     plt.figure(figsize=(12, 6))
     sns.boxplot(data=df, x="Feet From Curb")
     plt.title("Box Plot of Feet From Curb")
@@ -260,7 +260,7 @@ def main():
     df = ddf[["Vehicle Year"]]
     df["Vehicle Year"] = dd.to_numeric(df["Vehicle Year"], errors="coerce")
     df["Vehicle Year"] = df["Vehicle Year"].fillna(0).astype(int)
-    df = df[df["Vehicle Year"] != 0].compute()
+    df = df[df["Vehicle Year"] != 0].compute().reset_index(drop=True)
     plt.figure(figsize=(12, 6))
     sns.boxplot(x=df["Vehicle Year"])
     plt.title("Box Plot of Vehicle Year")
@@ -285,5 +285,6 @@ if __name__ == "__main__":
     client = Client(cluster)
     run_with_memory_log(
         main,
-        LOG_PATH / f"T3_{file_format}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_memory_log.txt",
+        LOG_PATH
+        / f"T3_{file_format}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_memory_log.txt",
     )
