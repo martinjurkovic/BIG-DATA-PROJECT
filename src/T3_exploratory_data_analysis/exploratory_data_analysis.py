@@ -280,7 +280,7 @@ def main():
 
 if __name__ == "__main__":
     if memory_limit is None:
-        memory_limit = 32 / n_workers
+        memory_limit = 64 / n_workers
 
     memory_string = f"{memory_limit}GiB"
 
