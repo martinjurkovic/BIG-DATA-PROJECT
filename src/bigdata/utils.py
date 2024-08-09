@@ -1,11 +1,13 @@
 import os
-import dask.dataframe as dd
-from pathlib import Path
-import duckdb
-import psutil
 import time
+import psutil
 import statistics
 import threading
+from pathlib import Path
+
+import duckdb
+import pandas as pd
+import dask.dataframe as dd
 
 from .hdf5 import read_hdf5
 
@@ -83,6 +85,13 @@ def read_duckdb_files(base_path, usecols=None, **kwargs):
     query = f"SELECT {columns_str} FROM nyc_data"
 
     # Execute the query and return the result as a DataFrame
+    conn.execute(query)
+    df = conn.fetch_df_chunk()
+    while True:
+        chunk = conn.fetch_df_chunk(1000)
+        if chunk is None:
+            break
+        df = pd.concat([df, chunk], ignore_index=True)
     df = conn.execute(query).df()
     df = dd.from_pandas(df)
     return df
