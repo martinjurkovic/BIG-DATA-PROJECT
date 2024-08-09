@@ -60,25 +60,29 @@ def main():
             f.write(f"Standard Deviation: {std_time:.2f} seconds\n")
 
     # Read the data
-    ddf = read_files(
-        base_path,
-        file_format,
-        usecols=[
-            "Registration State",
-            "Vehicle Body Type",
-            "Vehicle Year",
-            "Violation Code",
-            "Feet From Curb",
-            "Issue Date",
-            "Violation Precinct",
-            "Issuing Agency",
-            "Vehicle Make",
-            "Violation Location",
-            "Violation Time",
-            "Violation Precinct",
-        ],
-        years=years,
-    ).persist()
+    ddf = (
+        read_files(
+            base_path,
+            file_format,
+            usecols=[
+                "Registration State",
+                "Vehicle Body Type",
+                "Vehicle Year",
+                "Violation Code",
+                "Feet From Curb",
+                "Issue Date",
+                "Violation Precinct",
+                "Issuing Agency",
+                "Vehicle Make",
+                "Violation Location",
+                "Violation Time",
+                "Violation Precinct",
+            ],
+            years=years,
+        )
+        .sample(0.1)
+        .persist()
+    )
 
     # %%
     # Distribution of Registration States
@@ -171,7 +175,8 @@ def main():
     # Violations by Precinct
     start_time = time.time()
     df = ddf[["Violation Precinct"]].compute().reset_index(drop=True)
-    df_precinct = df["Violation Precinct"].value_counts().head(10)
+    df["Precinct"] = df["Violation Precinct"].values[:, 0]
+    df_precinct = df["Precinct"].value_counts().head(10)
     plt.figure(figsize=(12, 6))
     sns.countplot(data=df, x="Violation Precinct", order=df_precinct.index)
     plt.title("Violations by Precinct")
