@@ -176,7 +176,7 @@ def main():
     # Violations by Precinct
     start_time = time.time()
     df = ddf[["Violation Precinct"]].compute().reset_index(drop=True)
-    df["Precinct"] = df["Violation Precinct"].values[:, 0]
+    df["Precinct"] = df["Violation Precinct"]#.values[:, 0]
     df_precinct = df["Precinct"].value_counts().head(10)
     plt.figure(figsize=(12, 6))
     sns.countplot(data=df, x="Precinct", order=df_precinct.index)
@@ -231,7 +231,7 @@ def main():
     # Heatmap of Violation Counts by Location and Precinct
     start_time = time.time()
     df = ddf[["Violation Precinct", "Violation Location"]].compute()
-    df["Precinct"] = df["Violation Precinct"].values[:, 0]
+    df["Precinct"] = df["Violation Precinct"]#.values[:, 0]
     df.drop(columns=["Violation Precinct"], inplace=True)
     df = df.groupby(["Precinct", "Violation Location"]).size().unstack(fill_value=0)
     plt.figure(figsize=(12, 8))
@@ -277,7 +277,7 @@ def main():
 
 if __name__ == "__main__":
     if memory_limit is None:
-        memory_limit = 64 / n_workers
+        memory_limit = 32 / n_workers
 
     memory_string = f"{memory_limit}GiB"
 

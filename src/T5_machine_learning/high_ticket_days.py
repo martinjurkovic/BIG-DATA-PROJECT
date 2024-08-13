@@ -262,7 +262,7 @@ def main():
 
     # Save processing times
     times_log_path = os.path.join(
-        "logs", f"T5b_{fmt}_memory_lim_{memory_limit*n_workers}_times.txt"
+        "logs", f"T5b_{fmt}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_times.txt"
     )
     with open(times_log_path, "w") as f:
         for key, value in processing_times.items():
@@ -271,7 +271,7 @@ def main():
 
     # Save model performance
     performance_log_path = os.path.join(
-        "logs", f"T5b_{fmt}_memory_lim_{memory_limit*n_workers}_performance.txt"
+        "logs", f"T5b_{fmt}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_performance.txt"
     )
     with open(performance_log_path, "w") as f:
         for key, value in model_performance.items():
@@ -290,6 +290,6 @@ if __name__ == "__main__":
     run_with_memory_log(
         main,
         os.path.join(
-            "logs", f"T5b_{fmt}_memory_lim_{memory_limit*n_workers}_memory_log.txt"
+            "logs", f"T5b_{fmt}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_memory_log.txt"
         ),
     )

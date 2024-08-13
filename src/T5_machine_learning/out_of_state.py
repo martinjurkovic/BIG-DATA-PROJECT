@@ -468,14 +468,14 @@ def main():
     model_performance["SGDClassifier"] = acc
 
     # Save processing times
-    times_log_path = os.path.join("logs", f"T5a_{fmt}_times.txt")
+    times_log_path = os.path.join("logs", f"T5a_{fmt}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_times.txt")
     with open(times_log_path, "w") as f:
         for key, value in processing_times.items():
             print(f"{key :<19}: {value} seconds")
             f.write(f"{key :<19}: {value} seconds\n")
 
     # Save model performance
-    performance_log_path = os.path.join("logs", f"T5a_{fmt}_performance.txt")
+    performance_log_path = os.path.join("logs", f"T5a_{fmt}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_performance.txt")
     with open(performance_log_path, "w") as f:
         for key, value in model_performance.items():
             print(f"{key :<19}: {value}")
@@ -493,6 +493,6 @@ if __name__ == "__main__":
     run_with_memory_log(
         main,
         os.path.join(
-            "logs", f"T5a_{fmt}_memory_lim_{memory_limit*n_workers}_memory_log.txt"
+            "logs", f"T5a_{fmt}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_memory_log.txt"
         ),
     )
