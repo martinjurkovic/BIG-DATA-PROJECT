@@ -61,7 +61,6 @@ def main():
         "Vehicle Body Type",
         "Vehicle Make",
         "Issuing Agency",
-        "Violation Legal Code",
         "From Hours In Effect",
         "To Hours In Effect",
         "Vehicle Year",
@@ -78,7 +77,6 @@ def main():
         "Issuing Agency": "str",
         "Violation Time": "str",
         "Violation County": "str",
-        "Violation Legal Code": "str",
         "From Hours In Effect": "str",
         "To Hours In Effect": "str",
         "Vehicle Year": "float32",
@@ -345,7 +343,6 @@ def main():
         county_ddfs.append(county_ddf)
 
     ddf = dd.concat(county_ddfs)
-    del county_ddfs
 
     # convert Issue Time to yearly sine and cosine
     ddf["month_sine"] = np.sin(2 * np.pi * ddf["Issue Time"].dt.month / 12)
@@ -357,16 +354,153 @@ def main():
 
     ddf = ddf.set_index("Issue Time")
 
-    categoricals = [
-        "Plate Type",
-        "Violation Code",
-        "Vehicle Body Type",
-        "Vehicle Make",
-        "Issuing Agency",
-        "Violation County",
-        "Violation Legal Code",
-    ]
-    ddf = ddf.categorize(columns=categoricals)
+    categoricals = {
+        "Plate Type": [
+            "PAS",
+            "OTHER",
+            "COM",
+            "OMT",
+            "ORG",
+            "999",
+            "SRF",
+            "OMS",
+            "MOT",
+            "APP",
+            "IRP",
+        ],
+        "Violation Code": [
+            "71",
+            "40",
+            "14",
+            "20",
+            "46",
+            "21",
+            "38",
+            "69",
+            "45",
+            "37",
+            "47",
+            "77",
+            "74",
+            "17",
+            "70",
+            "19",
+            "50",
+            "31",
+            "48",
+            "13",
+            "83",
+            "98",
+            "62",
+            "42",
+            "60",
+            "68",
+            "78",
+            "66",
+            "16",
+            "18",
+            "51",
+            "64",
+            "11",
+            "67",
+            "85",
+            "39",
+            "35",
+            "24",
+            "10",
+            "75",
+            "53",
+            "84",
+            "89",
+            "41",
+            "73",
+            "72",
+            "61",
+            "80",
+            "1",
+            "3",
+            "9",
+            "82",
+            "49",
+            "23",
+            "36",
+            "7",
+            "79",
+            "99",
+            "5",
+            "27",
+            "22",
+            "54",
+            "12",
+            "25",
+            "87",
+            "4",
+            "76",
+            "26",
+            "33",
+            "63",
+        ],
+        "Vehicle Body Type": [
+            "SDSD",
+            "SU",
+            "BUS",
+            "DELV",
+            "VN",
+            "SD",
+            "TRAC",
+            "TAXI",
+            "other",
+            "PK",
+            "TRLR",
+            "UT",
+            "CONV",
+            "REFG",
+            "MCY",
+            "TK",
+            "4 DR",
+            "SW",
+            "WAGO",
+            "MP",
+        ],
+        "Vehicle Make": [
+            "H",
+            "N",
+            "T",
+            "L",
+            "F",
+            "I",
+            "G",
+            "S",
+            "M",
+            "B",
+            "A",
+            "V",
+            "P",
+            "C",
+            "D",
+            "J",
+            "other",
+            "R",
+            "U",
+            "W",
+            "K",
+            "O",
+            "Y",
+            "Z",
+        ],
+        "Issuing Agency": ["T", "X", "P", "S", "K", "V", "U", "R", "B", "Y", "C"],
+        "Violation County": [
+            "Manhattan",
+            "Queens",
+            "Bronx",
+            "Brooklyn",
+            "Staten Island",
+        ],
+    }
+    for col in categoricals:
+        ddf[col] = ddf[col].astype("category")
+        ddf[col] = ddf[col].cat.set_categories(categoricals[col])
+
     X = dd.get_dummies(ddf, columns=categoricals, drop_first=True).persist()
     y = X.pop("Registration State")
     X = X.fillna(0).astype(np.float32)
@@ -470,14 +604,20 @@ def main():
     model_performance["SGDClassifier"] = acc
 
     # Save processing times
-    times_log_path = os.path.join("logs", f"T5a_{fmt}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_times.txt")
+    times_log_path = os.path.join(
+        "logs",
+        f"T5a_{fmt}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_times.txt",
+    )
     with open(times_log_path, "w") as f:
         for key, value in processing_times.items():
             print(f"{key :<19}: {value} seconds")
             f.write(f"{key :<19}: {value} seconds\n")
 
     # Save model performance
-    performance_log_path = os.path.join("logs", f"T5a_{fmt}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_performance.txt")
+    performance_log_path = os.path.join(
+        "logs",
+        f"T5a_{fmt}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_performance.txt",
+    )
     with open(performance_log_path, "w") as f:
         for key, value in model_performance.items():
             print(f"{key :<19}: {value}")
@@ -495,6 +635,7 @@ if __name__ == "__main__":
     run_with_memory_log(
         main,
         os.path.join(
-            "logs", f"T5a_{fmt}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_memory_log.txt"
+            "logs",
+            f"T5a_{fmt}_n_workers_{n_workers}_memory_lim_{memory_limit*n_workers}_memory_log.txt",
         ),
     )
