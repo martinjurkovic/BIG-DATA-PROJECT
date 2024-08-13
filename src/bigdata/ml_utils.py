@@ -3,12 +3,12 @@ from sklearn.metrics import confusion_matrix
 
 
 def save_confusion_matrix(y_test, y_pred, model_name):
-    cmat = confusion_matrix(y_test, y_pred)
+    cmat = confusion_matrix(y_test, y_pred, normalize="all")
     fig, ax = plt.subplots()
     ax.imshow(cmat, interpolation="nearest", cmap=plt.cm.Blues)
     for i in range(cmat.shape[0]):
         for j in range(cmat.shape[1]):
-            ax.text(j, i, cmat[i, j], ha="center", va="center")
+            ax.text(j, i, f"{cmat[i, j]:.2f}", ha="center", va="center")
     ax.set_xlabel("Predicted")
     ax.set_ylabel("True")
     ax.axis("equal")
