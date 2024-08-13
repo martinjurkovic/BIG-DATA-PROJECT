@@ -61,7 +61,6 @@ def main():
         "Vehicle Body Type",
         "Vehicle Make",
         "Issuing Agency",
-        "Unregistered Vehicle?",
         "Violation Legal Code",
         "From Hours In Effect",
         "To Hours In Effect",
@@ -82,7 +81,6 @@ def main():
         "Violation Legal Code": "str",
         "From Hours In Effect": "str",
         "To Hours In Effect": "str",
-        "Unregistered Vehicle?": "str",
         "Vehicle Year": "float32",
         "Feet From Curb": "float32",
     }
@@ -217,10 +215,15 @@ def main():
         convert_vehicle_make, meta=("Vehicle Make", "str")
     )
 
-    def get_parking_hour(x: str):
-        if x == "ALL":
-            return 24
-        return get_hour(x)
+    def filter_plate_type(x: str):
+        if x in ["PAS", "COM", "OMT", "SRF", "OMS", "999", "APP", "MOT", "IRP", "ORG"]:
+            return x
+        else:
+            return "OTHER"
+
+    ddf["Plate Type"] = ddf["Plate Type"].apply(
+        filter_plate_type, meta=("Plate Type", "str")
+    )
 
     ddf["From Hours In Effect"] = (
         ddf["From Hours In Effect"]
@@ -362,7 +365,6 @@ def main():
         "Issuing Agency",
         "Violation County",
         "Violation Legal Code",
-        "Unregistered Vehicle?",
     ]
     ddf = ddf.categorize(columns=categoricals)
     X = dd.get_dummies(ddf, columns=categoricals, drop_first=True).persist()
