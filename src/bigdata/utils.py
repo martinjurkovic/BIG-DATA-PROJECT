@@ -35,7 +35,7 @@ def read_csv_files(base_path="../../data/csv", usecols=None, dtype=None, years=N
     return ddf
 
 
-def read_parquet_files(base_path="../../data/parquet", usecols=None, years=None):
+def read_parquet_files(base_path="../../data/parquet", usecols=None, years=None, frac=None):
     file_paths = []
     if years is None:
         file_paths = [
@@ -57,10 +57,12 @@ def read_parquet_files(base_path="../../data/parquet", usecols=None, years=None)
             raise ValueError("No files found for the specified years.")
         file_paths = [os.path.join(base_path, file) for file in filtered_files]
     ddf = dd.read_parquet(file_paths, engine="pyarrow", columns=usecols)
+    if frac is not None:
+        ddf = ddf.sample(frac=frac)
     return ddf
 
 
-def read_duckdb_files(base_path, usecols=None, **kwargs):
+def read_duckdb_files(base_path, usecols=None, frac = None, **kwargs):
     """
     Reads data from DuckDB and filters based on specified columns and years using only SQL.
 
@@ -84,6 +86,11 @@ def read_duckdb_files(base_path, usecols=None, **kwargs):
     # Construct the base SQL query
     query = f"SELECT {columns_str} FROM nyc_data"
 
+    if frac is not None:
+        # query += f" USING SAMPLE {frac*100} PERCENT (bernoulli)"
+        query += f" TABLESAMPLE reservoir({frac*100}%)"
+
+
     # Execute the query and return the result as a DataFrame
     # conn.execute(query)
     # df = conn.fetch_df_chunk()
@@ -93,8 +100,8 @@ def read_duckdb_files(base_path, usecols=None, **kwargs):
     #         break
     #     df = pd.concat([df, chunk], ignore_index=True)
     df = conn.execute(query).df()
-    df = dd.from_pandas(df)
-    return df
+    ddf = dd.from_pandas(df)
+    return ddf
 
 
 def read_hdf5_files(base_path="../../data/hdf5", usecols=None, years=None):
@@ -124,13 +131,13 @@ def read_hdf5_files(base_path="../../data/hdf5", usecols=None, years=None):
     return dd.concat(ddfs)
 
 
-def read_files(base_path, file_format, usecols=None, dtype=None, years=None):
+def read_files(base_path, file_format, usecols=None, dtype=None, years=None, frac=None, **kwargs):
     if file_format == "csv":
         return read_csv_files(base_path, usecols, dtype, years)
     elif file_format == "parquet":
         return read_parquet_files(base_path, usecols, years)
     elif file_format == "duckdb":
-        return read_duckdb_files(base_path, usecols)
+        return read_duckdb_files(base_path, usecols, frac)
     elif file_format == "hdf5":
         return read_hdf5_files(base_path, usecols, years)
     raise ValueError(
