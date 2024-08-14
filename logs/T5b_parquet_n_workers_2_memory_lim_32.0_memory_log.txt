@@ -1,0 +1,3 @@
+Max RAM usage: 471.81 MB
+Mean RAM usage: 319.95 MB
+Standard deviation of RAM usage: 78.01 MB

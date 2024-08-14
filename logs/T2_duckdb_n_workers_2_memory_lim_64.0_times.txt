@@ -1,0 +1,9 @@
+Schools   : 6.354207992553711 seconds
+Holidays  : 43.254008054733276 seconds
+Businesses: 324.4017400741577 seconds
+Events    : 30.29632306098938 seconds
+Landmarks : 0.601254940032959 seconds
+Weather   : 1.0932998657226562 seconds
+
+Mean Time: 67.67 seconds
+Standard Deviation: 115.90 seconds

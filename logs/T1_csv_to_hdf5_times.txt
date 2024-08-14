@@ -1,0 +1,14 @@
+2014.csv: 196.25 seconds
+2015.csv: 311.85 seconds
+2016.csv: 243.31 seconds
+2017.csv: 242.41 seconds
+2018.csv: 251.55 seconds
+2019.csv: 234.95 seconds
+2020.csv: 268.61 seconds
+2021.csv: 321.81 seconds
+2022.csv: 334.21 seconds
+2023.csv: 510.35 seconds
+2024_april.csv: 260.05 seconds
+
+Mean Time: 288.67 seconds
+Standard Deviation: 80.38 seconds

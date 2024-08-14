@@ -1,0 +1,13 @@
+Plot 1: 79.32 seconds
+Plot 2: 4.55 seconds
+Plot 3: 5.13 seconds
+Plot 4: 2.78 seconds
+Plot 5: 3.74 seconds
+Plot 6: 3.74 seconds
+Plot 7: 3.72 seconds
+Plot 8: 4.27 seconds
+Plot 9: 3.65 seconds
+Plot 10: 19.92 seconds
+
+Mean Time: 13.08 seconds
+Standard Deviation: 22.59 seconds

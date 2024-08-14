@@ -1,0 +1,3 @@
+XGBoost            : 1.0
+Logistic Regression: 1.0
+SGDClassifier      : 1.0
