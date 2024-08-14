@@ -1,8 +1,9 @@
 # PROJECT
 /logs
-/data
+/data/*
 data/parquet/*
 *.sh
+!data/file_sizes.py
 
 **/figs/*
 dask_duckdb
