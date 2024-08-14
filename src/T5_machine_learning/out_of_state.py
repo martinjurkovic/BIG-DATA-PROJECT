@@ -501,7 +501,7 @@ def main():
         ddf[col] = ddf[col].astype("category")
         ddf[col] = ddf[col].cat.set_categories(categoricals[col])
 
-    X = dd.get_dummies(ddf, columns=categoricals, drop_first=True).persist()
+    X = dd.get_dummies(ddf, columns=categoricals.keys(), drop_first=True).persist()
     y = X.pop("Registration State")
     X = X.fillna(0).astype(np.float32)
     y = (y == "NY").astype(int)
