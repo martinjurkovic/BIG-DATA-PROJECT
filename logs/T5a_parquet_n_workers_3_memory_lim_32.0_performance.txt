@@ -1,3 +1,0 @@
-XGBoost            : 0.9749577620378193
-Logistic Regression: 0.9701653778673078
-SGDClassifier      : 0.9678910260575736
