@@ -1,6 +1,6 @@
 # How to run Kafka processing?
 ```bash
-cd src/kafka
+cd src/T4_kafka
 ```
 
 First docker:
@@ -14,7 +14,12 @@ Then in separate terminals run the producer and consumer:
 ```bash
 python producer.py
 ```
-
+For statistical dashboard:
 ```bash
-python consumer.py
+python dash_consumer.py
+```
+
+For clustering:
+```bash
+python clustering_consumer.py
 ```
