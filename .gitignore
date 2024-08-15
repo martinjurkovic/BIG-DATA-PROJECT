@@ -1,3 +1,16 @@
+# PROJECT
+/data/*
+data/parquet/*
+*.sh
+!data/file_sizes.py
+
+**/figs/*
+dask_duckdb
+
+# Debuging
+launch.json
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

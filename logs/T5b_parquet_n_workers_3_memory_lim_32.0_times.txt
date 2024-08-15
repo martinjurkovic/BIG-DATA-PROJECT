@@ -1,0 +1,5 @@
+Read Data        : 0.012351036071777344 seconds
+Data Augmentation: 27.40886688232422 seconds
+XGBoost          : 0.6568498611450195 seconds
+Linear Regression: 9.407971143722534 seconds
+SGD              : 0.34885478019714355 seconds

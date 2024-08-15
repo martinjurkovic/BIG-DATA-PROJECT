@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bigdata"
+version = "0.0.1"
+authors = [
+  { name="TO DO", email="TODO@gmail.com" },
+]
+description = "TODO"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+  "confluent_kafka>=2.4.0",
+  "contextily>=1.6.0",
+  "dash>=2.17.1",
+  "dask>=2024.7.1",
+  "dask_ml>=2024.4.4",
+  "duckdb>=1.0.0",
+  "geodatasets>=2024.7.0",
+  "geopandas>=1.0.1",
+  "h5py>=3.11.0",
+  "holidays>=0.54",
+  "matplotlib>=3.8.4",
+  "numpy>=2.0.1",
+  "pandas>=2.2.2",
+  "plotly>=5.23.0",
+  "psutil>=5.9.8",
+  "pyarrow>=17.0.0",
+  "scikit_learn>=1.5.1",
+  "seaborn>=0.13.2",
+  "tqdm>=4.66.5",
+  "xgboost>=2.1.1",
+  "tables>=3.9.2
+]
+
+
+[project.urls]
+Homepage = "TODO"
+Issues = "TODO"
+
+[tool.setuptools.packages]
+find = { "where" = ["src"] }

@@ -1,0 +1,5 @@
+Read Data          : 0.018337011337280273 seconds
+Data Augmentation  : 29.69188618659973 seconds
+XGBoost            : 15.546418905258179 seconds
+Logistic Regression: 268.7348620891571 seconds
+SGDClassifier      : 3.889915704727173 seconds
